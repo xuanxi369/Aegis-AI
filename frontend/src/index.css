@@ -1,0 +1,487 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   全局基础样式
+   ============================================================ */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   动态渐变背景
+   ============================================================ */
+.bg-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: #0f172a;
+  overflow: hidden;
+}
+
+.bg-scene .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.35;
+}
+
+.bg-scene .orb-blue {
+  width: 700px;
+  height: 700px;
+  background: #3B82F6;
+  top: -15%;
+  left: -5%;
+  animation: float 22s ease-in-out infinite;
+}
+
+.bg-scene .orb-pink {
+  width: 600px;
+  height: 600px;
+  background: #EC4899;
+  top: 30%;
+  right: -10%;
+  animation: float 28s ease-in-out infinite reverse;
+}
+
+.bg-scene .orb-green {
+  width: 500px;
+  height: 500px;
+  background: #10B981;
+  bottom: -15%;
+  left: 30%;
+  animation: float 25s ease-in-out infinite 3s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(40px, -30px) scale(1.05); }
+  50% { transform: translate(-20px, 30px) scale(0.95); }
+  75% { transform: translate(30px, 20px) scale(1.02); }
+}
+
+/* ============================================================
+   Glassmorphism 组件
+   ============================================================ */
+.glass {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+}
+
+.glass-header {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ============================================================
+   渐变按钮
+   ============================================================ */
+.btn-gradient {
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6, #EC4899);
+  color: white;
+  font-weight: 600;
+  padding: 12px 32px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6, #EC4899);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+}
+
+.btn-gradient:hover::before {
+  opacity: 1;
+}
+
+.btn-gradient:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-gradient span {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   输入区域
+   ============================================================ */
+.glass-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #e2e8f0;
+  font-size: 14px;
+  line-height: 1.7;
+  padding: 16px 20px;
+  width: 100%;
+  resize: vertical;
+  transition: border-color 0.3s;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.glass-input::placeholder {
+  color: rgba(226, 232, 240, 0.3);
+}
+
+/* ============================================================
+   工具卡片
+   ============================================================ */
+.tool-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 28px 24px;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.tool-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.35s;
+  border-radius: 16px;
+}
+
+.tool-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.tool-card.card-blue:hover::before,
+.tool-card.card-blue.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), transparent);
+}
+
+.tool-card.card-pink:hover::before,
+.tool-card.card-pink.active {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), transparent);
+}
+
+.tool-card.card-green:hover::before,
+.tool-card.card-green.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);
+}
+
+.tool-card:hover::before {
+  opacity: 1;
+}
+
+.tool-card.active {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-4px);
+}
+
+.tool-card.active.card-blue {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 40px rgba(59, 130, 246, 0.15);
+}
+
+.tool-card.active.card-pink {
+  border-color: rgba(236, 72, 153, 0.5);
+  box-shadow: 0 0 40px rgba(236, 72, 153, 0.15);
+}
+
+.tool-card.active.card-green {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15);
+}
+
+/* ============================================================
+   Markdown 输出样式
+   ============================================================ */
+.markdown-output {
+  color: #e2e8f0;
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.markdown-output h1,
+.markdown-output h2,
+.markdown-output h3 {
+  color: #f1f5f9;
+  font-weight: 700;
+  margin-top: 1.2em;
+  margin-bottom: 0.6em;
+}
+
+.markdown-output h1 { font-size: 1.5em; }
+.markdown-output h2 { font-size: 1.3em; }
+.markdown-output h3 { font-size: 1.15em; }
+
+.markdown-output p {
+  margin-bottom: 0.8em;
+}
+
+.markdown-output ul,
+.markdown-output ol {
+  margin-left: 1.5em;
+  margin-bottom: 0.8em;
+}
+
+.markdown-output li {
+  margin-bottom: 0.3em;
+}
+
+.markdown-output strong {
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.markdown-output em {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.markdown-output code {
+  background: rgba(59, 130, 246, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #93c5fd;
+}
+
+.markdown-output pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.markdown-output pre code {
+  background: transparent;
+  padding: 0;
+  color: #e2e8f0;
+}
+
+.markdown-output blockquote {
+  border-left: 3px solid #3B82F6;
+  padding-left: 16px;
+  margin-left: 0;
+  margin-bottom: 0.8em;
+  color: #94a3b8;
+}
+
+.markdown-output hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 1.5em 0;
+}
+
+.markdown-output table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 13px;
+}
+
+.markdown-output th {
+  background: rgba(59, 130, 246, 0.15);
+  color: #f1f5f9;
+  font-weight: 600;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.markdown-output td {
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.markdown-output tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ============================================================
+   加载动画
+   ============================================================ */
+.loading-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3B82F6;
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+  background: #8B5CF6;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+  background: #EC4899;
+}
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================================
+   滚动条美化
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================================
+   淡入动画
+   ============================================================ */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-enter-from {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+
+/* ============================================================
+   Toast 通知动画
+   ============================================================ */
+.toast-enter-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(40px) scale(0.95);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(20px) scale(0.95);
+}
+
+/* ============================================================
+   行截断工具类
+   ============================================================ */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================================
+   文本选中样式
+   ============================================================ */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #f1f5f9;
+}
+
