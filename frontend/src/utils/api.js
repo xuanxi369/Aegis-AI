@@ -3,8 +3,9 @@
 // ============================================================
 
 // ⚠️ 替换为你的 Cloudflare Worker 部署地址
-const WORKER_URL = 'https://aegis-worker.millychck-033.workers.dev'
-
+//const WORKER_URL = 'https://aegis-worker.millychck-033.workers.dev'
+const WORKER_URL = 'https://api-ai.iieao.com'
+ 
 // ⚠️ 替换为你在 Worker 中设置的 AUTH_TOKEN（必须一致）
 const AUTH_TOKEN = 'dcfdfb354856b9f5df0c3bb880821363'
 
