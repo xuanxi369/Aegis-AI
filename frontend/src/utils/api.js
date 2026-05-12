@@ -3,14 +3,14 @@
 // ============================================================
 
 // ⚠️ 替换为你的 Cloudflare Worker 部署地址
-const WORKER_URL = 'https://aegis-worker.YOUR_SUBDOMAIN.workers.dev'
+const WORKER_URL = 'https://aegis-worker.millychck-033.workers.dev'
 
 // ⚠️ 替换为你在 Worker 中设置的 AUTH_TOKEN（必须一致）
-const AUTH_TOKEN = 'your-secret-auth-token-here'
+const AUTH_TOKEN = 'dcfdfb354856b9f5df0c3bb880821363'
 
 // ⚠️ 替换为你在 Worker 中设置的 EXPECTED_CLIENT_ID（若启用了客户端指纹验证）
 // 若 Worker 未配置此值，则留空字符串即可
-const CLIENT_ID = 'your-client-fingerprint-id'
+const CLIENT_ID = ''
 
 /**
  * 构建请求 Headers（环境指纹的一部分）
