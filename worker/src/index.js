@@ -247,6 +247,7 @@ export default {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+      
 
       const systemPrompt = SYSTEM_PROMPTS[tool_type]
 
