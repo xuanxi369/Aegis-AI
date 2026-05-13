@@ -534,78 +534,47 @@ function openExportModal() {
 // }
 
 async function secureExportToPDF(password) {
-  if (!password || password.length < 1) return;
+  if (!password) return;
   isExporting.value = true;
-
   const element = document.getElementById('report-content');
-  if (!element) {
-    isExporting.value = false;
-    return showToast('导出区域未找到', 'error');
-  }
 
   try {
-    showToast('📄 正在准备加密文档...');
-
-    // 🌟 核心点 1：暂时把元素拉回正常流，但我们要给它一个包裹层防止布局崩溃
-    const originalPosition = element.style.position;
-    const originalLeft = element.style.left;
-    const originalZIndex = element.style.zIndex;
-
+    showToast('📄 正在生成 PDF 流...');
+    
+    // 强制显示元素以便抓取
     element.style.position = 'relative';
     element.style.left = '0';
     element.style.zIndex = '9999';
-    // 强制染黑，解决白字白背景问题
-    element.style.setProperty('color', '#000000', 'important');
-    const all = element.querySelectorAll('*');
-    all.forEach(el => el.style.setProperty('color', '#000000', 'important'));
 
     const opt = {
       margin: 0,
-      filename: 'temp.pdf',
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        scrollY: 0 
-      },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 🌟 核心点 2：绝不使用 .save()！
-    // 我们只获取底层的 PDF Blob。此时文件还没下载，还在内存里。
+    // 🌟 1. 只获取内存里的 Blob，不下载！
     const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob');
 
-    // 🌟 核心点 3：调用你修复好的 pdfEncrypt.js
-    showToast('🔐 正在执行 RC4 权限锁定...');
+    // 🌟 2. 喂给加密函数
+    showToast('🔐 正在锁定文件结构...');
     const pdfBytes = await pdfBlob.arrayBuffer();
     const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password);
 
-    // 🌟 核心点 4：手动触发加密后的文件下载
-    const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(encryptedBlob);
+    // 🌟 3. 这里的下载才是带密码的
+    const url = URL.createObjectURL(new Blob([encryptedBytes], { type: 'application/pdf' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `安全报告_${Date.now()}.pdf`;
-    document.body.appendChild(a);
+    a.download = `加密报告_${Date.now()}.pdf`;
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
 
-    // 还原样式
-    element.style.position = originalPosition;
-    element.style.left = originalLeft;
-    element.style.zIndex = originalZIndex;
-    all.forEach(el => el.style.removeProperty('color'));
-
-    showToast('✅ 加密报告已成功导出');
+    showToast('✅ 成功导出（输入密码即可查看内容）');
     showPasswordModal.value = false;
-    pdfPassword.value = '';
-
   } catch (err) {
-    console.error('PDF Final Error:', err);
-    showToast(`❌ 导出失败: ${err.message}`, 'error');
+    showToast('❌ 导出失败');
   } finally {
+    element.style.position = 'fixed';
+    element.style.left = '-9999px';
     isExporting.value = false;
   }
 }
