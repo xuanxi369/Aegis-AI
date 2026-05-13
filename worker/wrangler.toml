@@ -17,6 +17,7 @@ MODEL_PROVIDER = "deepseek"       # "deepseek" 或 "gemini"
 # wrangler secret put AUTH_TOKEN          # 核心鉴权令牌（前后端必须一致）
 # wrangler secret put ALLOWED_ORIGIN      # 允许的前端域名，如 https://xxx.pages.dev
 # wrangler secret put EXPECTED_CLIENT_ID  # 客户端环境指纹令牌（可选增强）
+# wrangler secret put WHISPER_API_KEY    # OpenAI Whisper API 密钥（识别模块音频转写用）
 
 # ============================================================
 # 可选：Cloudflare Rate Limiting（在 Dashboard 配置）
