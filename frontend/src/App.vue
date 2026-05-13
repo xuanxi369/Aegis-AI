@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { marked } from 'marked'
 import html2pdf from 'html2pdf.js'
-import { PDFDocument } from 'pdf-lib'
+import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
 import {
   callAI, callAudioAI, autoParseFile, TOOLS_CONFIG
 } from './utils/api.js'
@@ -418,19 +418,10 @@ async function secureExportToPDF(password) {
     }
     const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob')
 
-    // 第二步：文档加密 — pdf-lib 加载并加密
-    showToast('🔐 正在进行 128-bit AES 加密...')
+    // 第二步：PDF 加密 — RC4 加密算法保护文档
+    showToast('🔐 正在进行 RC4 加密...')
     const pdfBytes = await pdfBlob.arrayBuffer()
-    const pdfDoc = await PDFDocument.load(pdfBytes)
-    await pdfDoc.encrypt({
-      userPassword: password,
-      ownerPassword: 'MASTER_KEY_BY_AEGIS',
-      permissions: {
-        printing: 'highResolution',
-        modifying: false,
-      },
-    })
-    const encryptedBytes = await pdfDoc.save()
+    const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password)
 
     // 第三步：触发浏览器下载
     const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' })
