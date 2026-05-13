@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { marked } from 'marked'
 import html2pdf from 'html2pdf.js'
-//import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
+import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
 import {
   callAI, callAudioAI, autoParseFile, TOOLS_CONFIG
 } from './utils/api.js'
