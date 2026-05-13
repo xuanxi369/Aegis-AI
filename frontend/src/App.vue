@@ -534,50 +534,66 @@ function openExportModal() {
 // }
 
 async function secureExportToPDF(password) {
-  if (!password) return;
+  if (!password || password.length < 1) return;
   isExporting.value = true;
+
   const element = document.getElementById('report-content');
+  if (!element) {
+    isExporting.value = false;
+    return showToast('导出区域未找到', 'error');
+  }
 
   try {
-    // 🌟 解决白板的关键：强制将颜色设置为黑色
-    // 你的截图显示有内容但由于污染变样了，我们要确保原始抓取是黑白的
-    element.style.position = 'relative';
-    element.style.left = '0';
-    element.style.zIndex = '9999';
-    element.style.color = '#000000';
-    
+    showToast('📄 正在捕获报告内容...');
+
+    // 1. 确保元素在渲染区（由于你 CSS 已设 z-index: -9999，这里不会有闪现）
+    element.style.left = '0px'; 
+    element.style.position = 'fixed';
+
     const opt = {
       margin: 0,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        scrollY: 0
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 获取 Blob
+    // 🌟 核心修正：绝对不要用 .save()！
+    // 我们只获取内存中的原始 PDF Blob 数据
     const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob');
 
-    // 加密
+    // 2. 将数据喂给你刚才修好的 v3 加密函数
+    showToast('🔐 正在应用 128-bit 权限锁定...');
     const pdfBytes = await pdfBlob.arrayBuffer();
+    
+    // 调用 v3 版本的二进制安全加密逻辑
     const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password);
 
-    // 下载
-    const url = URL.createObjectURL(new Blob([encryptedBytes], { type: 'application/pdf' }));
+    // 3. 手动触发下载加密后的最终文件
+    const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(encryptedBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Aegis_Secure_Report.pdf`;
+    a.download = `安全报告_${Date.now()}.pdf`;
+    document.body.appendChild(a);
     a.click();
+    
+    // 清理
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-    showToast('✅ 导出成功，请使用密码开启');
+    showToast('✅ 加密报告已成功下载，需密码开启');
     showPasswordModal.value = false;
+    pdfPassword.value = '';
+
   } catch (err) {
-    showToast('❌ 导出失败', 'error');
+    console.error('PDF Final Error:', err);
+    showToast(`❌ 导出失败: ${err.message}`, 'error');
   } finally {
-    element.style.position = 'fixed';
-    element.style.left = '-9999px';
     isExporting.value = false;
   }
 }
