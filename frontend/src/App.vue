@@ -465,7 +465,75 @@ function openExportModal() {
 //     isExporting.value = false
 //   }
 // }
-  async function secureExportToPDF(password) {
+
+
+
+
+  //////////////////////////////////////////////////////////////
+//   async function secureExportToPDF(password) {
+//   if (!password || password.length < 1) return
+//   isExporting.value = true
+
+//   const element = document.getElementById('report-content')
+//   if (!element) return showToast('导出区域未找到', 'error')
+  
+//   try {
+//     showToast('📄 正在渲染并加密 PDF...')
+
+//     // 把元素拉回可见区域底层
+//     element.style.left = '0px'
+//     element.style.zIndex = '-9999'
+
+//     // 🌟 核心魔法在这里：直接启用 jsPDF 原生加密！
+//     const opt = {
+//       margin: 0,
+//       filename: `企业级安全报告_${Date.now()}.pdf`,
+//       image: { type: 'jpeg', quality: 0.98 },
+//       html2canvas: { 
+//         scale: 2, 
+//         useCORS: true, 
+//         backgroundColor: '#ffffff'
+//       },
+//       jsPDF: { 
+//         unit: 'mm', 
+//         format: 'a4', 
+//         orientation: 'portrait',
+//         // 直接告诉底层 jsPDF 进行加密，彻底抛弃那个会毁坏文件的脚本
+//         encryption: {
+//           userPassword: password,            // 用户打开需要输入的密码
+//           ownerPassword: 'MASTER_KEY_BY_AEGIS', // 管理员密码
+//           userPermissions: ['print', 'copy'] // 可选：控制打印和复制权限
+//         }
+//       },
+//     }
+
+//     // 这一步会直接输出【已经加密好、且内容完好】的 Blob！
+//     const encryptedBlob = await html2pdf().set(opt).from(element).outputPdf('blob')
+
+//     // 触发下载
+//     const url = URL.createObjectURL(encryptedBlob)
+//     const a = document.createElement('a')
+//     a.href = url
+//     a.download = opt.filename
+//     document.body.appendChild(a)
+//     a.click()
+//     document.body.removeChild(a)
+//     URL.revokeObjectURL(url)
+
+//     showToast('✅ PDF 已安全导出（密码保护生效）')
+//     showPasswordModal.value = false
+//     pdfPassword.value = ''
+//   } catch (err) {
+//     console.error('PDF export error:', err)
+//     showToast(`❌ 导出失败: ${err.message}`, 'error')
+//   } finally {
+//     // 踢回屏幕外
+//     element.style.left = '-9999px'
+//     isExporting.value = false
+//   }
+// }
+
+async function secureExportToPDF(password) {
   if (!password || password.length < 1) return
   isExporting.value = true
 
@@ -473,62 +541,56 @@ function openExportModal() {
   if (!element) return showToast('导出区域未找到', 'error')
   
   try {
-    showToast('📄 正在渲染并加密 PDF...')
+    showToast('📄 正在准备报告内容...')
 
-    // 把元素拉回可见区域底层
+    // 1. 先把位置拉回来，确保它是“可见”的以便抓取
     element.style.left = '0px'
-    element.style.zIndex = '-9999'
+    element.style.zIndex = '9999'
 
-    // 🌟 核心魔法在这里：直接启用 jsPDF 原生加密！
+    // 🌟 关键：给浏览器一点点时间来应用上面的样式和颜色覆盖
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const opt = {
       margin: 0,
-      filename: `企业级安全报告_${Date.now()}.pdf`,
+      filename: `Report_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: false 
       },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait',
-        // 直接告诉底层 jsPDF 进行加密，彻底抛弃那个会毁坏文件的脚本
-        encryption: {
-          userPassword: password,            // 用户打开需要输入的密码
-          ownerPassword: 'MASTER_KEY_BY_AEGIS', // 管理员密码
-          userPermissions: ['print', 'copy'] // 可选：控制打印和复制权限
-        }
-      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }
 
-    // 这一步会直接输出【已经加密好、且内容完好】的 Blob！
-    const encryptedBlob = await html2pdf().set(opt).from(element).outputPdf('blob')
+    // 2. 生成原始 PDF Blob
+    const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob')
 
-    // 触发下载
+    // 3. 使用你的加密工具（此时 element 已经是深色文字，抓取出来肯定有内容）
+    showToast('🔐 正在执行安全加密...')
+    const pdfBytes = await pdfBlob.arrayBuffer()
+    const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password)
+
+    const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' })
     const url = URL.createObjectURL(encryptedBlob)
     const a = document.createElement('a')
     a.href = url
-    a.download = opt.filename
+    a.download = `Aegis_Secure_Report_${Date.now()}.pdf`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    showToast('✅ PDF 已安全导出（密码保护生效）')
+    showToast('✅ 加密报告已下载')
     showPasswordModal.value = false
-    pdfPassword.value = ''
   } catch (err) {
-    console.error('PDF export error:', err)
     showToast(`❌ 导出失败: ${err.message}`, 'error')
   } finally {
-    // 踢回屏幕外
+    // 还原隐藏位置
     element.style.left = '-9999px'
     isExporting.value = false
   }
 }
-
-
 
   
 
