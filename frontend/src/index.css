@@ -940,23 +940,21 @@ body {
 /* ============================================================
    强制修复 PDF 内部颜色（防止白屏鬼影）
    ============================================================ */
+/* 强制把 PDF 导出区域里的文字变成深色，解决白板问题 */
 .pdf-export-area .markdown-output {
-  color: #1e293b !important; /* 强制变成深色文字 */
+  color: #1e293b !important; 
 }
-
 .pdf-export-area .markdown-output h1,
 .pdf-export-area .markdown-output h2,
 .pdf-export-area .markdown-output h3,
 .pdf-export-area .markdown-output strong {
-  color: #0f172a !important; /* 强制标题和加粗变成深黑色 */
+  color: #0f172a !important; 
 }
-
 .pdf-export-area .markdown-output code {
   background: #f1f5f9 !important;
   color: #2563eb !important;
   border: 1px solid #e2e8f0;
 }
-
 .pdf-export-area .markdown-output blockquote {
   border-left-color: #cbd5e1 !important;
   color: #475569 !important;
