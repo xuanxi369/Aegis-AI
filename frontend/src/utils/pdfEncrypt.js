@@ -223,7 +223,17 @@ export async function encryptPDFWithPassword(pdfBytes, userPassword) {
   )
 
   // 重新构建 PDF
-  const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr
+  //const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr
 
-  return new TextEncoder().encode(newPdf)
+  //return new TextEncoder().encode(newPdf)
+
+  // 重新构建 PDF
+  const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr
+  
+  // ✅ 修复：安全的 Latin1 二进制编码，绝不破坏 PDF 原始流
+  const finalBytes = new Uint8Array(newPdf.length)
+  for (let i = 0; i < newPdf.length; i++) {
+    finalBytes[i] = newPdf.charCodeAt(i) & 0xFF
+  }
+  return finalBytes
 }
