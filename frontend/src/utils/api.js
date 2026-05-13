@@ -7,7 +7,7 @@
 const WORKER_URL = 'https://api-ai.iieao.com'
 
 // ⚠️ 替换为你在 Worker 中设置的 AUTH_TOKEN（必须一致）
-const AUTH_TOKEN='***'
+const AUTH_TOKEN='dcfdfb354856b9f5df0c3bb880821363'
 
 // ⚠️ 替换为你在 Worker 中设置的 EXPECTED_CLIENT_ID（若启用了客户端指纹验证）
 const CLIENT_ID = ''
