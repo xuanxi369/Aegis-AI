@@ -537,7 +537,6 @@ async function secureExportToPDF(password) {
   if (!password || password.length < 1) return;
   isExporting.value = true;
 
-  // 1. 直接获取那个原本就隐藏在 -9999px 的元素
   const element = document.getElementById('report-content');
   if (!element) {
     isExporting.value = false;
@@ -545,57 +544,60 @@ async function secureExportToPDF(password) {
   }
 
   try {
-    showToast('📄 正在生成安全报告...');
+    showToast('📄 正在生成并加密报告...');
 
-    // 2. 配置选项
+    // 1. 把隐藏元素拉回到屏幕底层，让 html2canvas 能拍到它
+    element.style.left = '0px';
+    element.style.zIndex = '-9999';
+
+    // 2. 暴力染黑：不管 Tailwind 怎么设，导出前强行把所有字变黑！（解决进去是白板的问题）
+    element.style.color = '#000000';
+    const allElements = element.querySelectorAll('*');
+    allElements.forEach(el => el.style.setProperty('color', '#000000', 'important'));
+
+    // 稍微等一下，让浏览器把字渲染成黑色
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    // 3. 把你说的这串最他妈关键的加密代码加回来！！！
     const opt = {
-      margin: 10,
-      filename: 'temp.pdf',
+      margin: 0,
+      filename: `安全报告单_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff',
-        // 关键：即使元素在 -9999px，也强制渲染它
-        scrollY: -window.scrollY, 
-        scrollX: -window.scrollX
+        scrollY: 0
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        // 就是这串代码！原生加密，直接生效！
+        encryption: {
+          userPassword: password,            
+          ownerPassword: 'MASTER_KEY_BY_AEGIS', 
+          userPermissions: ['print', 'copy'] 
+        }
+      }
     };
 
-    // 3. 生成 PDF 流 (注意：这里我们用 output('blob')，不直接 save)
-    // 且我们不再手动 clone，html2pdf 内部会处理，避免 UI 闪烁
-    const pdfBlob = await html2pdf().set(opt).from(element).toPdf().get('pdf').output('blob');
+    // 4. 一步到位：抓取 -> 加密 -> 直接下载
+    await html2pdf().set(opt).from(element).save();
 
-    // 4. 调用你已经修复好的加密工具
-    showToast('🔐 正在应用 128-bit 加密...');
-    const pdfBytes = await pdfBlob.arrayBuffer();
-    
-    // 🌟 这里是重点：确保调用了你修复好的函数
-    const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password);
-
-    // 5. 封装成最终的加密 Blob 并下载
-    const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(encryptedBlob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Aegis_Secure_Report_${Date.now()}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // 清理
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showToast('✅ 加密文件已安全导出');
+    showToast('✅ PDF 已安全导出，必须输密码才能看！');
     showPasswordModal.value = false;
     pdfPassword.value = '';
 
   } catch (err) {
-    console.error('Final Export Error:', err);
+    console.error('PDF export error:', err);
     showToast(`❌ 导出失败: ${err.message}`, 'error');
   } finally {
+    // 5. 完事后，把元素踢回隐藏区
+    element.style.left = '-9999px';
+    // 把文字颜色还原（为了不影响你之后的其他操作）
+    const allElements = element.querySelectorAll('*');
+    allElements.forEach(el => el.style.removeProperty('color'));
     isExporting.value = false;
   }
 }
