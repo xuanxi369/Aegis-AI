@@ -538,44 +538,43 @@ async function secureExportToPDF(password) {
   isExporting.value = true
 
   const element = document.getElementById('report-content')
-  if (!element) return showToast('导出区域未找到', 'error')
+  if (!element) {
+    isExporting.value = false
+    return showToast('导出区域未找到', 'error')
+  }
   
   try {
     showToast('📄 正在准备报告内容...')
 
-    // 1. 先把位置拉回来，确保它是“可见”的以便抓取
+    // 1. 把隐藏的导出区域拉回页面底层，方便截图
     element.style.left = '0px'
-    element.style.zIndex = '9999'
+    element.style.zIndex = '-9999'
 
-    // 🌟 关键：给浏览器一点点时间来应用上面的样式和颜色覆盖
+    // 2. 强制等待 100 毫秒，让浏览器把上面加的“深色文字” CSS 渲染出来！
     await new Promise(resolve => setTimeout(resolve, 100))
 
     const opt = {
       margin: 0,
       filename: `Report_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        logging: false 
-      },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }
 
-    // 2. 生成原始 PDF Blob
+    // 3. 生成包含实际内容的 PDF Blob
     const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob')
 
-    // 3. 使用你的加密工具（此时 element 已经是深色文字，抓取出来肯定有内容）
+    // 4. 开始加密（这里就不会再报 is not defined 了）
     showToast('🔐 正在执行安全加密...')
     const pdfBytes = await pdfBlob.arrayBuffer()
     const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password)
 
+    // 5. 触发下载
     const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' })
     const url = URL.createObjectURL(encryptedBlob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `Aegis_Secure_Report_${Date.now()}.pdf`
+    a.download = `安全报告单_${Date.now()}.pdf`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -583,10 +582,12 @@ async function secureExportToPDF(password) {
 
     showToast('✅ 加密报告已下载')
     showPasswordModal.value = false
+    pdfPassword.value = ''
   } catch (err) {
+    console.error('PDF export error:', err)
     showToast(`❌ 导出失败: ${err.message}`, 'error')
   } finally {
-    // 还原隐藏位置
+    // 渲染完再踢出屏幕外
     element.style.left = '-9999px'
     isExporting.value = false
   }
