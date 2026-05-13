@@ -544,48 +544,60 @@ async function secureExportToPDF(password) {
   }
 
   try {
-    showToast('📄 正在生成并加密报告...');
+    showToast('📄 正在生成报告内容...');
 
-    // 1. 把隐藏元素拉回到屏幕底层，让 html2canvas 能拍到它
-    element.style.left = '0px';
-    element.style.zIndex = '-9999';
-
-    // 2. 暴力染黑：不管 Tailwind 怎么设，导出前强行把所有字变黑！（解决进去是白板的问题）
-    element.style.color = '#000000';
-    const allElements = element.querySelectorAll('*');
-    allElements.forEach(el => el.style.setProperty('color', '#000000', 'important'));
-
-    // 稍微等一下，让浏览器把字渲染成黑色
-    await new Promise(resolve => setTimeout(resolve, 150));
-
-    // 3. 把你说的这串最他妈关键的加密代码加回来！！！
     const opt = {
       margin: 0,
-      filename: `安全报告单_${Date.now()}.pdf`,
+      filename: `temp.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff',
-        scrollY: 0
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait',
-        // 就是这串代码！原生加密，直接生效！
-        encryption: {
-          userPassword: password,            
-          ownerPassword: 'MASTER_KEY_BY_AEGIS', 
-          userPermissions: ['print', 'copy'] 
+        // 🌟 终极绝杀：使用 onclone 在内存中修改，彻底无视屏幕滚动和 fixed 隐藏导致的白板！
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('report-content');
+          // 强行把虚拟环境里的元素拉回常规文档流，解除不可见状态
+          el.style.position = 'static';
+          el.style.left = 'auto';
+          el.style.top = 'auto';
+          el.style.zIndex = 'auto';
+          el.style.display = 'block';
+          el.style.width = '794px';
+
+          // 在虚拟DOM中强行染黑所有文字，断绝深色模式导致的隐形白板
+          el.style.setProperty('color', '#000000', 'important');
+          const nodes = el.querySelectorAll('*');
+          nodes.forEach(n => {
+            if (n.style) n.style.setProperty('color', '#000000', 'important');
+          });
         }
-      }
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 4. 一步到位：抓取 -> 加密 -> 直接下载
-    await html2pdf().set(opt).from(element).save();
+    // 1. 获取底层最原始的 PDF 数据流 (这里绝对不会弹下载，而是只拿 Blob)
+    const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob');
 
-    showToast('✅ PDF 已安全导出，必须输密码才能看！');
+    // 2. 将数据流强行喂给你的加密脚本 (这里决定了它必然需要密码)
+    showToast('🔐 正在执行 128-bit 安全加密...');
+    const pdfBytes = await pdfBlob.arrayBuffer();
+    const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password);
+
+    // 3. 把加密后的数据打包下载
+    const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(encryptedBlob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Aegis安全报告_${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('✅ 加密报告已成功下载！');
     showPasswordModal.value = false;
     pdfPassword.value = '';
 
@@ -593,11 +605,6 @@ async function secureExportToPDF(password) {
     console.error('PDF export error:', err);
     showToast(`❌ 导出失败: ${err.message}`, 'error');
   } finally {
-    // 5. 完事后，把元素踢回隐藏区
-    element.style.left = '-9999px';
-    // 把文字颜色还原（为了不影响你之后的其他操作）
-    const allElements = element.querySelectorAll('*');
-    allElements.forEach(el => el.style.removeProperty('color'));
     isExporting.value = false;
   }
 }
