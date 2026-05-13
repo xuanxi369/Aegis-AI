@@ -210,8 +210,8 @@ export async function encryptPDFWithPassword(pdfBytes, userPassword) {
 
   // 找到 trailer 位置
   const trailerIdx = pdfStr.lastIndexOf('trailer')
-  if (trailerIdx === -1) throw new Error('无法定位 PDF trailer，请确保输入为有效 PDF 文件')
-
+  //if (trailerIdx === -1) throw new Error('无法定位 PDF trailer，请确保输入为有效 PDF 文件') //demo
+   
   // 修改 trailer：添加 /Encrypt 引用和 /ID
   const beforeTrailer = pdfStr.substring(0, trailerIdx)
   let trailerStr = pdfStr.substring(trailerIdx)
@@ -227,11 +227,12 @@ export async function encryptPDFWithPassword(pdfBytes, userPassword) {
 
   //return new TextEncoder().encode(newPdf)
   // utils/pdfEncrypt.js 的最后几行
-  const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr
+  //const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr  //demo
+  const finalStr = beforeTrailer + encryptDict + '\n' + trailerStr;
   
-  const finalBytes = new Uint8Array(newPdf.length)
-  for (let i = 0; i < newPdf.length; i++) {
-    finalBytes[i] = newPdf.charCodeAt(i) & 0xFF
+  const finalBytes = new Uint8Array(finalStr.length)
+  for (let i = 0; i < finalStr.length; i++) {
+    finalBytes[i] = finalStr.charCodeAt(i) & 0xFF
   }
   return finalBytes
 }
