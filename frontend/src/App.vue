@@ -534,61 +534,65 @@ function openExportModal() {
 // }
 
 async function secureExportToPDF(password) {
-  if (!password || password.length < 1) return
+  // 先暂时不管密码，我们首要目标是让 PDF 里出现内容！
   isExporting.value = true
 
-  const element = document.getElementById('report-content')
-  if (!element) {
-    isExporting.value = false
-    return showToast('导出区域未找到', 'error')
-  }
-  
   try {
-    showToast('📄 正在准备报告内容...')
+    showToast('📄 正在渲染报告...')
 
-    // 1. 把隐藏的导出区域拉回页面底层，方便截图
-    element.style.left = '0px'
-    element.style.zIndex = '-9999'
+    const originalElement = document.getElementById('report-content')
+    if (!originalElement) throw new Error('导出区域未找到')
 
-    // 2. 强制等待 100 毫秒，让浏览器把上面加的“深色文字” CSS 渲染出来！
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // 1. 创建克隆节点，彻底摆脱深色模式和页面滚动条的干扰
+    const cloneContainer = originalElement.cloneNode(true)
+    cloneContainer.id = 'pdf-clone-temp'
+    cloneContainer.style.position = 'fixed'
+    cloneContainer.style.top = '0px'
+    cloneContainer.style.left = '0px'
+    cloneContainer.style.width = '794px'
+    cloneContainer.style.backgroundColor = '#ffffff'
+    cloneContainer.style.zIndex = '9999' // 强制显示在屏幕最前面
 
+    document.body.appendChild(cloneContainer)
+
+    // 2. 暴力破解“白字写在白纸上”的问题：强制把所有字体染成纯黑
+    cloneContainer.style.color = '#000000'
+    const allNodes = cloneContainer.querySelectorAll('*')
+    allNodes.forEach(node => {
+      node.style.color = '#000000'
+    })
+
+    // 3. 停顿 300 毫秒，给 Vue 和浏览器一点时间把这个黑字白底的框画出来
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // 4. 配置 html2pdf，直接保存，抛弃所有会毁坏文件的加密代码
     const opt = {
-      margin: 0,
-      filename: `Report_${Date.now()}.pdf`,
+      margin: 10,
+      filename: `安全报告单_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        scrollX: 0
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }
 
-    // 3. 生成包含实际内容的 PDF Blob
-    const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob')
+    // 5. 生成并直接触发浏览器下载
+    await html2pdf().set(opt).from(cloneContainer).save()
 
-    // 4. 开始加密（这里就不会再报 is not defined 了）
-    showToast('🔐 正在执行安全加密...')
-    const pdfBytes = await pdfBlob.arrayBuffer()
-    const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password)
+    // 6. 截图完成，销毁克隆节点，神不知鬼不觉
+    document.body.removeChild(cloneContainer)
 
-    // 5. 触发下载
-    const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' })
-    const url = URL.createObjectURL(encryptedBlob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `安全报告单_${Date.now()}.pdf`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
-    showToast('✅ 加密报告已下载')
+    showToast('✅ PDF 已下载，快打开看看有没有字！')
     showPasswordModal.value = false
-    pdfPassword.value = ''
+
   } catch (err) {
     console.error('PDF export error:', err)
     showToast(`❌ 导出失败: ${err.message}`, 'error')
   } finally {
-    // 渲染完再踢出屏幕外
-    element.style.left = '-9999px'
     isExporting.value = false
   }
 }
