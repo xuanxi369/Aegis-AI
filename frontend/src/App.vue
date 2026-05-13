@@ -539,39 +539,42 @@ async function secureExportToPDF(password) {
   const element = document.getElementById('report-content');
 
   try {
-    showToast('📄 正在生成 PDF 流...');
-    
-    // 强制显示元素以便抓取
+    // 🌟 解决白板的关键：强制将颜色设置为黑色
+    // 你的截图显示有内容但由于污染变样了，我们要确保原始抓取是黑白的
     element.style.position = 'relative';
     element.style.left = '0';
     element.style.zIndex = '9999';
-
+    element.style.color = '#000000';
+    
     const opt = {
       margin: 0,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff'
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 🌟 1. 只获取内存里的 Blob，不下载！
+    // 获取 Blob
     const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob');
 
-    // 🌟 2. 喂给加密函数
-    showToast('🔐 正在锁定文件结构...');
+    // 加密
     const pdfBytes = await pdfBlob.arrayBuffer();
     const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password);
 
-    // 🌟 3. 这里的下载才是带密码的
+    // 下载
     const url = URL.createObjectURL(new Blob([encryptedBytes], { type: 'application/pdf' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `加密报告_${Date.now()}.pdf`;
+    a.download = `Aegis_Secure_Report.pdf`;
     a.click();
 
-    showToast('✅ 成功导出（输入密码即可查看内容）');
+    showToast('✅ 导出成功，请使用密码开启');
     showPasswordModal.value = false;
   } catch (err) {
-    showToast('❌ 导出失败');
+    showToast('❌ 导出失败', 'error');
   } finally {
     element.style.position = 'fixed';
     element.style.left = '-9999px';
