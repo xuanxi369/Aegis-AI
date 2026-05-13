@@ -887,7 +887,7 @@ const moduleCategories = computed(() => {
       <!-- AI 免责声明 -->
       <div class="pdf-footer">
         <p><strong>IIEAO 免责声明：</strong>本报告由 Aegis AI 分析引擎生成，仅靠参考。报告内容不构成任何法律、财务或人事决策建议。最终决策请以人工审核为准。</p>
-        <p><strong>©️Charles </strong> <strong> Business Contact：millychck@gmail.com </strong> <strong> Work Contact：Charles@iieao.com</p>
+        <p><strong>©️Charles </strong> <strong> Business Contact：millychck@gmail.com </strong> <strong> Work Contact：Charles@iieao.com </strong></p>
         <p class="pdf-footer-meta">Powered by Aegis AI · DeepSeek / Gemini · {{ exportDate }} · 文件已加密保护</p>
       </div>
     </div>
