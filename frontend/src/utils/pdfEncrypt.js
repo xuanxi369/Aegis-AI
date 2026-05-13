@@ -160,76 +160,136 @@ function computeUValue(encryptionKey) {
 }
 
 // ─── 主加密函数 ────────────────────────────────────────────
+// export async function encryptPDFWithPassword(pdfBytes, userPassword) {
+//   const data = new Uint8Array(pdfBytes)
+//   const pdfStr = new TextDecoder('latin1').decode(data)
+
+//   // 生成 16 字节随机 File ID
+//   const fileId = new Uint8Array(16)
+//   crypto.getRandomValues(fileId)
+//   const fileIdHex = Array.from(fileId).map(b => b.toString(16).padStart(2, '0')).join('')
+
+//   // R=2, V=1, 40-bit RC4（最广泛兼容的加密方式）
+//   const R = 2
+//   const V = 1
+
+//   // 权限值：-3900 = 0xFFFFF0C4
+//   // Bit 3 (allow print) = 1, Bit 5 (allow copy) = 1, Bit 4 (modify) = 0
+//   const permissions = -3900
+
+//   // Step 1: 计算 O 值
+//   const oValue = computeOValue('MASTER_KEY_BY_AEGIS', userPassword)
+
+//   // Step 2: 计算加密密钥（5 bytes = 40-bit）
+//   const encKey = computeEncryptionKey(userPassword, oValue, permissions, fileId)
+
+//   // Step 3: 计算 U 值
+//   const uValue = computeUValue(encKey)
+
+//   // 格式化十六进制
+//   const oHex = Array.from(oValue).map(b => b.toString(16).padStart(2, '0')).join('')
+//   const uHex = Array.from(uValue).map(b => b.toString(16).padStart(2, '0')).join('')
+
+//   // 找到最后一个对象编号
+//   const objMatches = [...pdfStr.matchAll(/(\d+)\s+0\s+obj/g)]
+//   const maxObjNum = objMatches.length > 0
+//     ? objMatches.reduce((max, m) => Math.max(max, parseInt(m[1])), 0)
+//     : 0
+//   const encryptObjNum = maxObjNum + 1
+
+//   // 构建 Encrypt 字典对象（V=1, R=2, Length=40）
+//   const encryptDict = [
+//     `${encryptObjNum} 0 obj`,
+//     `<< /Type /Encrypt /Filter /Standard /V ${V} /R ${R} /Length 40`,
+//     `/O <${oHex}>`,
+//     `/U <${uHex}>`,
+//     `/P ${permissions}`,
+//     `>>`,
+//     `endobj`
+//   ].join('\n')
+
+//   // 找到 trailer 位置
+//   const trailerIdx = pdfStr.lastIndexOf('trailer')
+//   //if (trailerIdx === -1) throw new Error('无法定位 PDF trailer，请确保输入为有效 PDF 文件') //demo
+   
+//   // 修改 trailer：添加 /Encrypt 引用和 /ID
+//   const beforeTrailer = pdfStr.substring(0, trailerIdx)
+//   let trailerStr = pdfStr.substring(trailerIdx)
+
+//   // 在 trailer 的 >> 之前插入加密引用
+//   trailerStr = trailerStr.replace(
+//     />>\s*$/,
+//     `/Encrypt ${encryptObjNum} 0 R /ID [(<${fileIdHex}>) (<${fileIdHex}>)] >>`
+//   )
+
+//   //重新构建 PDF
+//   //const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr
+
+//   //return new TextEncoder().encode(newPdf)
+//   // utils/pdfEncrypt.js 的最后几行
+//   //const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr  //demo
+//   const finalStr = beforeTrailer + encryptDict + '\n' + trailerStr;
+  
+//   const finalBytes = new Uint8Array(finalStr.length)
+//   for (let i = 0; i < finalStr.length; i++) {
+//     finalBytes[i] = finalStr.charCodeAt(i) & 0xFF
+//   }
+//   return finalBytes
+// }
+
+
+
+// ─── 主加密函数：修正了定位逻辑与二进制安全 ────────────────────────────
 export async function encryptPDFWithPassword(pdfBytes, userPassword) {
   const data = new Uint8Array(pdfBytes)
+  // 使用 latin1 编码，确保 1 字节对应 1 字符，不破坏图片等二进制数据
   const pdfStr = new TextDecoder('latin1').decode(data)
 
-  // 生成 16 字节随机 File ID
+  // 1. 查找文件真正的结尾标记
+  const eofIdx = pdfStr.lastIndexOf('%%EOF')
+  if (eofIdx === -1) throw new Error('无效的 PDF 文件结构')
+
+  // 2. 关键修复：从 %%EOF 往前找真正的 trailer 控制区（避开图片数据的干扰）
+  const searchArea = pdfStr.substring(0, eofIdx)
+  const trailerIdx = searchArea.lastIndexOf('trailer')
+  if (trailerIdx === -1) throw new Error('未找到 PDF trailer 控制区')
+
+  // 准备加密参数（保持你原有的算法逻辑）
   const fileId = new Uint8Array(16)
   crypto.getRandomValues(fileId)
   const fileIdHex = Array.from(fileId).map(b => b.toString(16).padStart(2, '0')).join('')
 
-  // R=2, V=1, 40-bit RC4（最广泛兼容的加密方式）
-  const R = 2
-  const V = 1
-
-  // 权限值：-3900 = 0xFFFFF0C4
-  // Bit 3 (allow print) = 1, Bit 5 (allow copy) = 1, Bit 4 (modify) = 0
-  const permissions = -3900
-
-  // Step 1: 计算 O 值
   const oValue = computeOValue('MASTER_KEY_BY_AEGIS', userPassword)
-
-  // Step 2: 计算加密密钥（5 bytes = 40-bit）
-  const encKey = computeEncryptionKey(userPassword, oValue, permissions, fileId)
-
-  // Step 3: 计算 U 值
+  const encKey = computeEncryptionKey(userPassword, oValue, -3900, fileId)
   const uValue = computeUValue(encKey)
 
-  // 格式化十六进制
   const oHex = Array.from(oValue).map(b => b.toString(16).padStart(2, '0')).join('')
   const uHex = Array.from(uValue).map(b => b.toString(16).padStart(2, '0')).join('')
 
-  // 找到最后一个对象编号
+  // 重新计算对象编号
   const objMatches = [...pdfStr.matchAll(/(\d+)\s+0\s+obj/g)]
-  const maxObjNum = objMatches.length > 0
-    ? objMatches.reduce((max, m) => Math.max(max, parseInt(m[1])), 0)
+  const maxObjNum = objMatches.length > 0 
+    ? objMatches.reduce((max, m) => Math.max(max, parseInt(m[1])), 0) 
     : 0
   const encryptObjNum = maxObjNum + 1
 
-  // 构建 Encrypt 字典对象（V=1, R=2, Length=40）
-  const encryptDict = [
-    `${encryptObjNum} 0 obj`,
-    `<< /Type /Encrypt /Filter /Standard /V ${V} /R ${R} /Length 40`,
-    `/O <${oHex}>`,
-    `/U <${uHex}>`,
-    `/P ${permissions}`,
-    `>>`,
-    `endobj`
-  ].join('\n')
+  // 构建加密字典
+  const encryptDict = `\n${encryptObjNum} 0 obj\n<< /Type /Encrypt /Filter /Standard /V 1 /R 2 /Length 40 /O <${oHex}> /U <${uHex}> /P -3900 >>\nendobj\n`
 
-  // 找到 trailer 位置
-  const trailerIdx = pdfStr.lastIndexOf('trailer')
-  //if (trailerIdx === -1) throw new Error('无法定位 PDF trailer，请确保输入为有效 PDF 文件') //demo
-   
-  // 修改 trailer：添加 /Encrypt 引用和 /ID
+  // 3. 精准修改 trailer 字典：在结束符 >> 前插入引用
+  let trailerContent = pdfStr.substring(trailerIdx, eofIdx)
+  const lastBracketIdx = trailerContent.lastIndexOf('>>')
+  if (lastBracketIdx === -1) throw new Error('trailer 结构损坏')
+
+  const encryptRef = ` /Encrypt ${encryptObjNum} 0 R /ID [(<${fileIdHex}>) (<${fileIdHex}>)] `
+  const updatedTrailer = trailerContent.substring(0, lastBracketIdx) + encryptRef + trailerContent.substring(lastBracketIdx)
+
+  // 4. 重新拼装：保证原本的 %%EOF 及其后的数据不丢失
   const beforeTrailer = pdfStr.substring(0, trailerIdx)
-  let trailerStr = pdfStr.substring(trailerIdx)
+  const afterEOF = pdfStr.substring(eofIdx)
+  const finalStr = beforeTrailer + encryptDict + updatedTrailer + afterEOF
 
-  // 在 trailer 的 >> 之前插入加密引用
-  trailerStr = trailerStr.replace(
-    />>\s*$/,
-    `/Encrypt ${encryptObjNum} 0 R /ID [(<${fileIdHex}>) (<${fileIdHex}>)] >>`
-  )
-
-  //重新构建 PDF
-  //const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr
-
-  //return new TextEncoder().encode(newPdf)
-  // utils/pdfEncrypt.js 的最后几行
-  //const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr  //demo
-  const finalStr = beforeTrailer + encryptDict + '\n' + trailerStr;
-  
+  // 5. 字节级重构：禁止使用 TextEncoder（解决乱码像素条的根源）
   const finalBytes = new Uint8Array(finalStr.length)
   for (let i = 0; i < finalStr.length; i++) {
     finalBytes[i] = finalStr.charCodeAt(i) & 0xFF
