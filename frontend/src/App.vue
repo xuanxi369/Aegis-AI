@@ -407,17 +407,25 @@ async function secureExportToPDF(password) {
 
     // 第一步：视觉渲染 — html2pdf 将 HTML 区域生成 PDF Blob
     const element = document.getElementById('report-content')
-    if (!element) throw new Error('导出区域未找到')
+    if (!element) throw new Error('导出区域未找到，请确认内容仍在屏幕上可见')
 
     const opt = {
       margin: 0,
       filename: 'report.pdf',
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        // 新增以下两行：修复页面滚动导致的截白板问题 2026-05-14
+        scrollY: 0,
+        windowHeight: element.scrollHeight || window.innerHeight
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     }
-    const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob')
-
+    // 【关键修复】使用 .toPdf().output('blob') 保证异步渲染队列 2026-05-14
+    // const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob')  
+    const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob')
     // 第二步：PDF 加密 — RC4 加密算法保护文档
     showToast('🔐 正在进行 RC4 加密...')
     const pdfBytes = await pdfBlob.arrayBuffer()
@@ -428,7 +436,7 @@ async function secureExportToPDF(password) {
     const url = URL.createObjectURL(encryptedBlob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `企业级安全报告_${Date.now()}.pdf`
+    a.download = `报告单_${Date.now()}.pdf`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
