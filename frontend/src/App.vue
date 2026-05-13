@@ -544,11 +544,7 @@ async function secureExportToPDF(password) {
   }
 
   try {
-    showToast('📄 正在捕获报告内容...');
-
-    // 1. 确保元素在渲染区（由于你 CSS 已设 z-index: -9999，这里不会有闪现）
-    element.style.left = '0px'; 
-    element.style.position = 'fixed';
+    showToast('📄 正在准备报告...');
 
     const opt = {
       margin: 0,
@@ -557,36 +553,40 @@ async function secureExportToPDF(password) {
         scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff',
-        scrollY: 0
+        // 🌟 关键：使用 onclone 在内存中处理克隆体，保证截图时内容绝对可见且为黑色
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('report-content');
+          el.style.position = 'static';
+          el.style.left = '0';
+          el.style.visibility = 'visible';
+          el.style.display = 'block';
+          // 强制变黑
+          const all = el.querySelectorAll('*');
+          all.forEach(node => node.style.setProperty('color', '#000000', 'important'));
+        }
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 🌟 核心修正：绝对不要用 .save()！
-    // 我们只获取内存中的原始 PDF Blob 数据
+    // 1. 获取内存中的 PDF 流
     const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob');
 
-    // 2. 将数据喂给你刚才修好的 v3 加密函数
-    showToast('🔐 正在应用 128-bit 权限锁定...');
+    // 2. 加密
+    showToast('🔐 正在锁定安全指纹...');
     const pdfBytes = await pdfBlob.arrayBuffer();
-    
-    // 调用 v3 版本的二进制安全加密逻辑
     const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password);
 
-    // 3. 手动触发下载加密后的最终文件
-    const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(encryptedBlob);
+    // 3. 触发下载
+    const url = URL.createObjectURL(new Blob([encryptedBytes], { type: 'application/pdf' }));
     const a = document.createElement('a');
     a.href = url;
     a.download = `安全报告_${Date.now()}.pdf`;
     document.body.appendChild(a);
     a.click();
-    
-    // 清理
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showToast('✅ 加密报告已成功下载，需密码开启');
+    showToast('✅ 导出成功');
     showPasswordModal.value = false;
     pdfPassword.value = '';
 
