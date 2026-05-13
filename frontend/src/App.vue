@@ -402,13 +402,20 @@ async function secureExportToPDF(password) {
   if (!password || password.length < 1) return
   isExporting.value = true
 
+  const element = document.getElementById('report-content')
+  if (!element) return showToast('导出区域未找到', 'error')
+  
   try {
     showToast('📄 正在渲染 PDF...')
 
     // 第一步：视觉渲染 — html2pdf 将 HTML 区域生成 PDF Blob
-    const element = document.getElementById('report-content')
-    if (!element) throw new Error('导出区域未找到，请确认内容仍在屏幕上可见')
-
+    //const element = document.getElementById('report-content')
+    //if (!element) throw new Error('导出区域未找到，请确认内容仍在屏幕上可见')
+    
+    // 🌟 1. 渲染前：强制拉回到正常坐标，并藏在底层
+    element.style.left = '0px'
+    element.style.zIndex = '-9999'
+     
     const opt = {
       margin: 0,
       filename: 'report.pdf',
@@ -449,6 +456,8 @@ async function secureExportToPDF(password) {
     console.error('PDF export error:', err)
     showToast(`❌ 导出失败: ${err.message}`, 'error')
   } finally {
+    // 🌟 3. 渲染完成后：重新把它踢出屏幕外
+    element.style.left = '-9999px'
     isExporting.value = false
   }
 }
