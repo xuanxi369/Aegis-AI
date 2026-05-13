@@ -398,7 +398,74 @@ function openExportModal() {
   showPasswordModal.value = true
 }
 
-async function secureExportToPDF(password) {
+// async function secureExportToPDF(password) {
+//   if (!password || password.length < 1) return
+//   isExporting.value = true
+
+//   const element = document.getElementById('report-content')
+//   if (!element) return showToast('导出区域未找到', 'error')
+  
+//   try {
+//     showToast('📄 正在渲染 PDF...')
+
+//     // 第一步：视觉渲染 — html2pdf 将 HTML 区域生成 PDF Blob
+//     //const element = document.getElementById('report-content')
+//     //if (!element) throw new Error('导出区域未找到，请确认内容仍在屏幕上可见')
+    
+//     // 🌟 1. 渲染前：强制拉回到正常坐标，并藏在底层
+//     element.style.left = '0px'
+//     element.style.zIndex = '-9999'
+     
+//     const opt = {
+//       margin: 0,
+//       filename: 'report.pdf',
+//       image: { type: 'jpeg', quality: 0.98 },
+//       html2canvas: { 
+//         scale: 2, 
+//         useCORS: true, 
+//         backgroundColor: '#ffffff',
+//       },
+//       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+//     }
+
+//    // 👇👇👇 临时加这一行：直接下载原始 PDF，停止后续加密 👇👇👇
+//     await html2pdf().set(opt).from(element).save('test-raw.pdf');
+//     return; // 终止函数，先不走加密逻辑
+//     // 👆👆👆 临时加这一行：直接下载原始 PDF，停止后续加密 👆👆👆
+
+    
+//     // 【关键修复】使用 .toPdf().output('blob') 保证异步渲染队列 2026-05-14
+//     // const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob')  
+//     const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob')
+//     // 第二步：PDF 加密 — RC4 加密算法保护文档
+//     showToast('🔐 正在进行 RC4 加密...')
+//     const pdfBytes = await pdfBlob.arrayBuffer()
+//     const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password)
+
+//     // 第三步：触发浏览器下载
+//     const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' })
+//     const url = URL.createObjectURL(encryptedBlob)
+//     const a = document.createElement('a')
+//     a.href = url
+//     a.download = `报告单_${Date.now()}.pdf`
+//     document.body.appendChild(a)
+//     a.click()
+//     document.body.removeChild(a)
+//     URL.revokeObjectURL(url)
+
+//     showToast('✅ PDF 已安全导出（密码保护 + 权限锁定）')
+//     showPasswordModal.value = false
+//     pdfPassword.value = ''
+//   } catch (err) {
+//     console.error('PDF export error:', err)
+//     showToast(`❌ 导出失败: ${err.message}`, 'error')
+//   } finally {
+//     // 🌟 3. 渲染完成后：重新把它踢出屏幕外
+//     element.style.left = '-9999px'
+//     isExporting.value = false
+//   }
+// }
+  async function secureExportToPDF(password) {
   if (!password || password.length < 1) return
   isExporting.value = true
 
@@ -408,14 +475,27 @@ async function secureExportToPDF(password) {
   try {
     showToast('📄 正在渲染 PDF...')
 
-    // 第一步：视觉渲染 — html2pdf 将 HTML 区域生成 PDF Blob
-    //const element = document.getElementById('report-content')
-    //if (!element) throw new Error('导出区域未找到，请确认内容仍在屏幕上可见')
+    // 🌟 终极修复 1：创建固定在视口的克隆容器，无视任何滚动条影响
+    const cloneContainer = document.createElement('div')
+    cloneContainer.style.position = 'fixed'
+    cloneContainer.style.left = '0px'
+    cloneContainer.style.top = '0px'
+    cloneContainer.style.zIndex = '-9999' // 藏在页面最底层
+    cloneContainer.style.width = '794px'
+    cloneContainer.style.backgroundColor = '#ffffff'
+
+    // 深度克隆原本的 HTML 结构，并解除它的隐藏属性
+    const cloneNode = element.cloneNode(true)
+    cloneNode.style.position = 'relative'
+    cloneNode.style.left = '0px'
     
-    // 🌟 1. 渲染前：强制拉回到正常坐标，并藏在底层
-    element.style.left = '0px'
-    element.style.zIndex = '-9999'
-     
+    cloneContainer.appendChild(cloneNode)
+    document.body.appendChild(cloneContainer)
+
+    // 🌟 终极修复 2：强制等待 150 毫秒，让浏览器有充足的时间完成物理重绘
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => setTimeout(resolve, 150))
+
     const opt = {
       margin: 0,
       filename: 'report.pdf',
@@ -424,30 +504,31 @@ async function secureExportToPDF(password) {
         scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff',
+        scrollY: 0, // 强制归零滚动条干扰
+        scrollX: 0
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     }
 
-   // 👇👇👇 临时加这一行：直接下载原始 PDF，停止后续加密 👇👇👇
-    await html2pdf().set(opt).from(element).save('test-raw.pdf');
-    return; // 终止函数，先不走加密逻辑
-    // 👆👆👆 临时加这一行：直接下载原始 PDF，停止后续加密 👆👆👆
+    // 💡 你可以随时解除下面两行的注释，测试生成的【未加密 PDF】是否正常
+    // await html2pdf().set(opt).from(cloneContainer).save('test-raw.pdf')
+    // return
 
-    
-    // 【关键修复】使用 .toPdf().output('blob') 保证异步渲染队列 2026-05-14
-    // const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob')  
-    const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob')
-    // 第二步：PDF 加密 — RC4 加密算法保护文档
+    const pdfBlob = await html2pdf().set(opt).from(cloneContainer).toPdf().output('blob')
+
+    // 🌟 终极修复 3：截图完成，销毁克隆容器，做到“来无影去无踪”
+    document.body.removeChild(cloneContainer)
+
+    // ── 下面是原有的加密流程 ──
     showToast('🔐 正在进行 RC4 加密...')
     const pdfBytes = await pdfBlob.arrayBuffer()
     const encryptedBytes = await encryptPDFWithPassword(pdfBytes, password)
 
-    // 第三步：触发浏览器下载
     const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' })
     const url = URL.createObjectURL(encryptedBlob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `报告单_${Date.now()}.pdf`
+    a.download = `安全报告单_${Date.now()}.pdf`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -460,11 +541,16 @@ async function secureExportToPDF(password) {
     console.error('PDF export error:', err)
     showToast(`❌ 导出失败: ${err.message}`, 'error')
   } finally {
-    // 🌟 3. 渲染完成后：重新把它踢出屏幕外
-    element.style.left = '-9999px'
     isExporting.value = false
   }
 }
+
+
+
+
+  
+
+  
 
 // ── 键盘快捷键 ────────────────────────────────────────────
 function handleKeydown(e) {
