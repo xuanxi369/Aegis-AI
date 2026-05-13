@@ -959,3 +959,10 @@ body {
   border-left-color: #cbd5e1 !important;
   color: #475569 !important;
 }
+
+
+/* 强制让导出区域内的所有文字在 PDF 里变黑 */
+#report-content .markdown-output, 
+#report-content .markdown-output * {
+  color: #000000 !important;
+}
