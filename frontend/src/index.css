@@ -766,7 +766,8 @@ body {
 /* ============================================================
    PDF 导出区域（屏幕隐藏，html2pdf 捕获）
    ============================================================ */
-.pdf-export-area {
+
+/* .pdf-export-area {
   position: absolute;
   left: -9999px;
   top: 0;
@@ -774,6 +775,17 @@ body {
   background: #ffffff;
   color: #1e293b;
   font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+} */
+.pdf-export-area {
+  position: fixed; /* 使用 fixed，防止撑开页面滚动条 */
+  top: 0;
+  left: 0;         /* 回到正常坐标 0 ! */
+  width: 794px;
+  z-index: -9999;  /* 藏在页面最底层，用户肉眼看不见 */
+  background: #ffffff;
+  color: #1e293b;
+  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  pointer-events: none; /* 防止遮挡底层的点击事件 */
 }
 
 .pdf-header {
