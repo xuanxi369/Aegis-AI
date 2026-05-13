@@ -425,8 +425,8 @@ async function secureExportToPDF(password) {
         useCORS: true, 
         backgroundColor: '#ffffff',
         // 新增以下两行：修复页面滚动导致的截白板问题 2026-05-14
-        scrollY: 0,
-        windowHeight: element.scrollHeight || window.innerHeight
+        //scrollY: 0,
+        //windowHeight: element.scrollHeight || window.innerHeight
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     }
