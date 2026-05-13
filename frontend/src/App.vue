@@ -559,7 +559,7 @@ const moduleCategories = computed(() => {
           </h1>
           <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
             面向传统企业人事、财务、行政的智能办公平台<br class="hidden md:block" />
-            <span class="text-slate-500">AI 深度分析 · 风险预警 · 智能纠错 · 效率倍增</span>
+            <span class="text-slate-500">AI 深度分析 · 风险预警 · 排查纠错 · 增效降时</span>
           </p>
         </section>
 
@@ -886,7 +886,8 @@ const moduleCategories = computed(() => {
       </div>
       <!-- AI 免责声明 -->
       <div class="pdf-footer">
-        <p><strong>AI 审计免责声明：</strong>本报告由 Aegis AI 智能分析引擎自动生成，仅供参考。报告内容不构成任何法律、财务或人事决策建议。最终决策请以人工审核为准。</p>
+        <p><strong>IIEAO 免责声明：</strong>本报告由 Aegis AI 分析引擎生成，仅靠参考。报告内容不构成任何法律、财务或人事决策建议。最终决策请以人工审核为准。</p>
+        <p><strong>©️Charles </strong> Business Contact：millychck@gmail.com </strong>Work Contact：Charles@iieao.com</p>
         <p class="pdf-footer-meta">Powered by Aegis AI · DeepSeek / Gemini · {{ exportDate }} · 文件已加密保护</p>
       </div>
     </div>
