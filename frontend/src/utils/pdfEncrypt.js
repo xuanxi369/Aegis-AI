@@ -222,7 +222,7 @@ export async function encryptPDFWithPassword(pdfBytes, userPassword) {
     `/Encrypt ${encryptObjNum} 0 R /ID [(<${fileIdHex}>) (<${fileIdHex}>)] >>`
   )
 
-  重新构建 PDF
+  //重新构建 PDF
   //const newPdf = beforeTrailer + encryptDict + '\n' + trailerStr
 
   //return new TextEncoder().encode(newPdf)
