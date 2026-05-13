@@ -424,12 +424,16 @@ async function secureExportToPDF(password) {
         scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff',
-        // 新增以下两行：修复页面滚动导致的截白板问题 2026-05-14
-        //scrollY: 0,
-        //windowHeight: element.scrollHeight || window.innerHeight
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     }
+
+   // 👇👇👇 临时加这一行：直接下载原始 PDF，停止后续加密 👇👇👇
+    await html2pdf().set(opt).from(element).save('test-raw.pdf');
+    return; // 终止函数，先不走加密逻辑
+    // 👆👆👆 临时加这一行：直接下载原始 PDF，停止后续加密 👆👆👆
+
+    
     // 【关键修复】使用 .toPdf().output('blob') 保证异步渲染队列 2026-05-14
     // const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob')  
     const pdfBlob = await html2pdf().set(opt).from(element).toPdf().output('blob')
