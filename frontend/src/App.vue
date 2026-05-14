@@ -334,7 +334,7 @@ onUnmounted(() => {
           </div>
           
           <h5 class="text-6xl md:text-[7rem] font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-12">
-            {{ t('IIEAO 效能中枢') }} <br/> 
+            {{ t('IIEAO效能中枢') }} <br/> 
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('智驭未来') }}</span>
           </h5>
           <h3 style="color: black;">面向传统企业文职人员的智能办公平台</h3>
