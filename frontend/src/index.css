@@ -2,967 +2,315 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   全局基础样式
-   ============================================================ */
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+:root {
+  --bg-color: #F4F4F5; /* 避免死白，采用高级浅灰底色 */
+  --text-main: #111111;
+  --text-muted: #71717A;
+  --accent-color: #E63946; /* 图4中的赭橙色 */
+  --border-color: #111111;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
-  background-color: #0f172a;
-  color: #e2e8f0;
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
   min-height: 100vh;
-  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ============================================================
-   动态渐变背景
-   ============================================================ */
-.bg-scene {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-color: #0f172a;
-  overflow: hidden;
-}
-
-.bg-scene .orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.35;
-}
-
-.bg-scene .orb-blue {
-  width: 700px;
-  height: 700px;
-  background: #3B82F6;
-  top: -15%;
-  left: -5%;
-  animation: float 22s ease-in-out infinite;
-}
-
-.bg-scene .orb-pink {
-  width: 600px;
-  height: 600px;
-  background: #EC4899;
-  top: 30%;
-  right: -10%;
-  animation: float 28s ease-in-out infinite reverse;
-}
-
-.bg-scene .orb-green {
-  width: 500px;
-  height: 500px;
-  background: #10B981;
-  bottom: -15%;
-  left: 30%;
-  animation: float 25s ease-in-out infinite 3s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(40px, -30px) scale(1.05); }
-  50% { transform: translate(-20px, 30px) scale(0.95); }
-  75% { transform: translate(30px, 20px) scale(1.02); }
-}
-
-/* ============================================================
-   Glassmorphism 组件
-   ============================================================ */
-.glass {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-}
-
-.glass-strong {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-}
-
-.glass-header {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* ============================================================
-   渐变按钮
-   ============================================================ */
-.btn-gradient {
-  background: linear-gradient(135deg, #3B82F6, #8B5CF6, #EC4899);
-  color: white;
-  font-weight: 600;
-  padding: 12px 32px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-gradient::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #3B82F6, #8B5CF6, #EC4899);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.btn-gradient:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
-}
-
-.btn-gradient:hover::before {
-  opacity: 1;
-}
-
-.btn-gradient:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.btn-gradient span {
-  position: relative;
-  z-index: 1;
-}
-
-/* ============================================================
-   输入区域
-   ============================================================ */
-.glass-input {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: #e2e8f0;
-  font-size: 14px;
-  line-height: 1.7;
-  padding: 16px 20px;
-  width: 100%;
-  resize: vertical;
-  transition: border-color 0.3s;
-  font-family: 'Inter', 'Noto Sans SC', sans-serif;
-}
-
-.glass-input:focus {
-  outline: none;
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.glass-input::placeholder {
-  color: rgba(226, 232, 240, 0.3);
-}
-
-/* ============================================================
-   工具卡片
-   ============================================================ */
-.tool-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 28px 24px;
-  cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.tool-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.35s;
-  border-radius: 16px;
-}
-
-.tool-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.tool-card.card-blue:hover::before,
-.tool-card.card-blue.active {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), transparent);
-}
-
-.tool-card.card-pink:hover::before,
-.tool-card.card-pink.active {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), transparent);
-}
-
-.tool-card.card-green:hover::before,
-.tool-card.card-green.active {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);
-}
-
-.tool-card:hover::before {
-  opacity: 1;
-}
-
-.tool-card.active {
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-4px);
-}
-
-.tool-card.active.card-blue {
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 40px rgba(59, 130, 246, 0.15);
-}
-
-.tool-card.active.card-pink {
-  border-color: rgba(236, 72, 153, 0.5);
-  box-shadow: 0 0 40px rgba(236, 72, 153, 0.15);
-}
-
-.tool-card.active.card-green {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15);
-}
-
-.tool-card.card-violet:hover::before,
-.tool-card.card-violet.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), transparent);
-}
-.tool-card.active.card-violet {
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 0 40px rgba(139, 92, 246, 0.15);
-}
-
-.tool-card.card-amber:hover::before,
-.tool-card.card-amber.active {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), transparent);
-}
-.tool-card.active.card-amber {
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 40px rgba(245, 158, 11, 0.15);
-}
-
-.tool-card.card-cyan:hover::before,
-.tool-card.card-cyan.active {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), transparent);
-}
-.tool-card.active.card-cyan {
-  border-color: rgba(6, 182, 212, 0.5);
-  box-shadow: 0 0 40px rgba(6, 182, 212, 0.15);
-}
-
-/* ============================================================
-   Markdown 输出样式
-   ============================================================ */
-.markdown-output {
-  color: #e2e8f0;
-  line-height: 1.8;
-  font-size: 14px;
-}
-
-.markdown-output h1,
-.markdown-output h2,
-.markdown-output h3 {
-  color: #f1f5f9;
-  font-weight: 700;
-  margin-top: 1.2em;
-  margin-bottom: 0.6em;
-}
-
-.markdown-output h1 { font-size: 1.5em; }
-.markdown-output h2 { font-size: 1.3em; }
-.markdown-output h3 { font-size: 1.15em; }
-
-.markdown-output p {
-  margin-bottom: 0.8em;
-}
-
-.markdown-output ul,
-.markdown-output ol {
-  margin-left: 1.5em;
-  margin-bottom: 0.8em;
-}
-
-.markdown-output li {
-  margin-bottom: 0.3em;
-}
-
-.markdown-output strong {
-  color: #f8fafc;
-  font-weight: 600;
-}
-
-.markdown-output em {
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.markdown-output code {
-  background: rgba(59, 130, 246, 0.15);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  color: #93c5fd;
-}
-
-.markdown-output pre {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 16px;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin-bottom: 1em;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.markdown-output pre code {
-  background: transparent;
-  padding: 0;
-  color: #e2e8f0;
-}
-
-.markdown-output blockquote {
-  border-left: 3px solid #3B82F6;
-  padding-left: 16px;
-  margin-left: 0;
-  margin-bottom: 0.8em;
-  color: #94a3b8;
-}
-
-.markdown-output hr {
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 1.5em 0;
-}
-
-.markdown-output table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
-  font-size: 13px;
-}
-
-.markdown-output th {
-  background: rgba(59, 130, 246, 0.15);
-  color: #f1f5f9;
-  font-weight: 600;
-  padding: 10px 14px;
-  text-align: left;
-  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
-}
-
-.markdown-output td {
-  padding: 8px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.markdown-output tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* ============================================================
-   加载动画
-   ============================================================ */
-.loading-dots {
-  display: inline-flex;
-  gap: 4px;
-}
-
-.loading-dots span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #3B82F6;
-  animation: dot-pulse 1.4s ease-in-out infinite;
-}
-
-.loading-dots span:nth-child(2) {
-  animation-delay: 0.2s;
-  background: #8B5CF6;
-}
-
-.loading-dots span:nth-child(3) {
-  animation-delay: 0.4s;
-  background: #EC4899;
-}
-
-@keyframes dot-pulse {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
-}
-
-/* ============================================================
-   滚动条美化
-   ============================================================ */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* ============================================================
-   淡入动画
-   ============================================================ */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.fade-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-enter-from {
-  opacity: 0;
-  transform: translateY(24px);
-}
-
-.slide-leave-to {
-  opacity: 0;
-  transform: translateY(-12px);
-}
-
-/* ============================================================
-   文件上传拖拽区域
-   ============================================================ */
-.file-drop-zone {
-  border: 2px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 40px 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.file-drop-zone:hover {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: rgba(59, 130, 246, 0.05);
-}
-
-.file-drop-zone.file-drop-active {
-  border-color: rgba(59, 130, 246, 0.6);
-  background: rgba(59, 130, 246, 0.08);
-  transform: scale(1.01);
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.1);
-}
-
-/* ============================================================
-   财务审计 JSON 报告渲染
-   ============================================================ */
-.finance-report {
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.finance-report .fr-header {
+/* ==========================================
+   排版与通用组件 (Studio Style)
+   ========================================== */
+.studio-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: center;
+  padding: 24px 40px;
+  border-bottom: 2px solid var(--border-color);
 }
-
-.finance-report .fr-header h3 {
-  color: #f1f5f9;
-  font-size: 18px;
-  font-weight: 700;
+.studio-logo {
+  font-weight: 900;
+  font-size: 24px;
+  letter-spacing: -1px;
+  cursor: pointer;
 }
-
-.finance-report .fr-badge {
-  padding: 4px 12px;
-  border-radius: 8px;
+.studio-nav {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.finance-report .fr-badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-.finance-report .fr-badge-yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.finance-report .fr-badge-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-.finance-report .fr-score-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.finance-report .fr-score-bar {
-  flex: 1;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.finance-report .fr-score-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.8s ease;
-}
-
-.finance-report .fr-score-text {
-  font-size: 20px;
-  font-weight: 800;
-  min-width: 60px;
-  text-align: right;
-}
-
-.finance-report .fr-section {
-  margin-bottom: 20px;
-}
-
-.finance-report .fr-section h4 {
-  color: #e2e8f0;
+.studio-btn {
+  background: var(--text-main);
+  color: #fff;
+  border: none;
+  padding: 16px 32px;
+  font-weight: 700;
   font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.finance-report .fr-kv-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
-}
-
-.finance-report .fr-kv {
-  background: rgba(0, 0, 0, 0.15);
-  padding: 10px 14px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.finance-report .fr-kv span {
-  font-size: 11px;
-  color: #64748b;
-}
-
-.finance-report .fr-kv strong {
-  color: #f1f5f9;
-  font-size: 15px;
-}
-
-.finance-report .fr-anomaly {
-  background: rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
-}
-
-.finance-report .fr-anomaly-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: #e2e8f0;
-  font-size: 13px;
-}
-
-.finance-report .fr-sev {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.finance-report .fr-sev-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.finance-report .fr-sev-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.finance-report .fr-sev-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-
-.finance-report .fr-anomaly-ref {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.finance-report .fr-anomaly-fix {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #93c5fd;
-}
-
-.finance-report .fr-advice {
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.15);
-  border-radius: 10px;
-  padding: 12px 16px;
-  color: #93c5fd;
-  font-size: 13px;
-}
-
-/* ============================================================
-   Toast 通知动画
-   ============================================================ */
-.toast-enter-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.toast-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.toast-enter-from {
-  opacity: 0;
-  transform: translateX(40px) scale(0.95);
-}
-
-.toast-leave-to {
-  opacity: 0;
-  transform: translateX(20px) scale(0.95);
-}
-
-/* ============================================================
-   行截断工具类
-   ============================================================ */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* ============================================================
-   文本选中样式
-   ============================================================ */
-::selection {
-  background: rgba(59, 130, 246, 0.3);
-  color: #f1f5f9;
-}
-
-/* ============================================================
-   PDF 密码保护弹窗
-   ============================================================ */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.studio-btn:hover { background: var(--accent-color); }
+.studio-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.studio-btn-outline {
+  background: transparent;
+  color: var(--text-main);
+  border: 2px solid var(--border-color);
+}
+.studio-btn-outline:hover { background: var(--border-color); color: #fff; }
+
+.accent-block {
+  background-color: var(--accent-color);
+  color: #fff;
 }
 
-.modal-card {
+/* ==========================================
+   表单与输入区
+   ========================================== */
+.studio-input {
   width: 100%;
-  max-width: 420px;
-  padding: 32px;
-  border-radius: 20px;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 16px;
+  padding: 20px;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.studio-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+.studio-input::placeholder { color: #A1A1AA; }
+
+.file-drop-area {
+  border: 2px dashed var(--border-color);
+  padding: 60px 20px;
   text-align: center;
-  position: relative;
-}
-
-.modal-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
-}
-
-.modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.modal-btn-cancel {
-  padding: 10px 20px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
 }
-
-.modal-btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+.file-drop-area:hover, .file-drop-area.active {
+  background: rgba(230, 57, 70, 0.05);
+  border-color: var(--accent-color);
 }
 
-.modal-enter-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.modal-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.modal-enter-from {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-card {
-  transform: scale(0.9) translateY(20px);
-}
-
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-leave-to .modal-card {
-  transform: scale(0.95) translateY(10px);
-}
-
-/* ============================================================
-   PDF 导出区域（屏幕隐藏，html2pdf 捕获）
-   ============================================================ */
-
-/* .pdf-export-area {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  width: 794px;
-  background: #ffffff;
-  color: #1e293b;
-  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
-} */
-.pdf-export-area {
-  position: fixed; /* 使用 fixed，防止撑开页面滚动条 */
-  top: 0;
-  left: 0;         /* 回到正常坐标 0 ! */
-  width: 794px;
-  z-index: -9999;  /* 藏在页面最底层，用户肉眼看不见 */
-  background: #ffffff;
-  color: #1e293b;
-  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
-  pointer-events: none; /* 防止遮挡底层的点击事件 */
-}
-
-.pdf-header {
-  background: linear-gradient(135deg, #3B82F6, #8B5CF6, #EC4899);
-  padding: 28px 36px;
-  color: white;
-}
-
-.pdf-header-inner {
+/* ==========================================
+   页面视图: 展示页 (Landing)
+   ========================================== */
+.view-landing {
+  min-height: 100vh;
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
 }
-
-.pdf-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.2);
+.landing-main {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 18px;
-  flex-shrink: 0;
+  padding: 40px;
+  position: relative;
+}
+.landing-content {
+  text-align: center;
+  max-width: 900px;
+  position: relative;
+  z-index: 10;
+}
+.huge-text {
+  font-size: clamp(4rem, 8vw, 8rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  margin-bottom: 24px;
+}
+.landing-bg-block {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60vw;
+  height: 40vh;
+  background: var(--accent-color);
+  z-index: 0;
+  opacity: 0.1;
+  filter: blur(100px);
 }
 
-.pdf-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+/* ==========================================
+   页面视图: 工作台 (Dashboard)
+   ========================================== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  border-bottom: 2px solid var(--border-color);
 }
-
-.pdf-subtitle {
-  margin: 4px 0 0;
-  font-size: 12px;
-  opacity: 0.85;
+.tool-item {
+  border-right: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  padding: 40px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.3s;
 }
-
-.pdf-tool-info {
-  padding: 12px 36px;
-  background: #f1f5f9;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #475569;
+.tool-item:hover {
+  background: var(--text-main);
+  color: #fff;
 }
-
-.pdf-tool-icon {
-  font-size: 16px;
+.tool-item:hover .tool-num { color: var(--accent-color); }
+.tool-item:hover .tool-desc { color: #A1A1AA; }
+.tool-num {
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 24px;
+  display: block;
 }
-
-.pdf-tool-name {
-  font-weight: 600;
-  color: #1e293b;
+.tool-name {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 16px;
 }
-
-.pdf-content {
-  padding: 28px 36px;
-  min-height: 200px;
-  color: #1e293b;
-}
-
-.pdf-content h1, .pdf-content h2, .pdf-content h3 {
-  color: #0f172a;
-}
-
-.pdf-content table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.pdf-content th {
-  background: #f1f5f9;
-  color: #1e293b;
-  font-weight: 600;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  text-align: left;
-}
-
-.pdf-content td {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  color: #334155;
-}
-
-.pdf-content strong {
-  color: #0f172a;
-}
-
-.pdf-footer {
-  padding: 18px 36px;
-  background: #f8fafc;
-  border-top: 2px solid #e2e8f0;
-  font-size: 11px;
-  color: #64748b;
+.tool-desc {
+  font-size: 14px;
+  color: var(--text-muted);
   line-height: 1.6;
 }
 
-.pdf-footer strong {
-  color: #334155;
+/* ==========================================
+   页面视图: 工具详情 (Tool View)
+   ========================================== */
+.tool-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  min-height: calc(100vh - 82px);
+}
+.tool-sidebar {
+  border-right: 2px solid var(--border-color);
+  padding: 40px;
+  background: #fff;
+}
+.tool-workspace {
+  padding: 40px;
+  background: var(--bg-color);
 }
 
-.pdf-footer-meta {
-  margin-top: 6px;
-  font-size: 10px;
-  color: #94a3b8;
+/* ==========================================
+   移动端极致适配 (图4风格)
+   ========================================== */
+@media (max-width: 768px) {
+  .studio-header { padding: 20px; }
+  .tool-layout { grid-template-columns: 1fr; }
+  .tool-sidebar { border-right: none; border-bottom: 4px solid var(--text-main); padding: 30px 20px; }
+  .tool-workspace { padding: 20px; }
+  .dashboard-grid { grid-template-columns: 1fr; border-bottom: none; }
+  .tool-item { border-right: none; border-bottom: 4px solid var(--text-main); margin-bottom: 16px; background: #fff; border-radius: 12px; }
+  .tool-item:hover { background: #fff; color: var(--text-main); }
+  .tool-item:active { transform: scale(0.98); }
+  
+  /* 移动端特殊的大色块展现 */
+  .accent-block { border-radius: 8px; }
+  .studio-input { border-radius: 8px; }
+  .file-drop-area { border-radius: 8px; }
 }
 
-/* ============================================================
-   财务报告 PDF 导出适配（浅色背景覆盖）
-   ============================================================ */
-.pdf-content .finance-report {
-  color: #1e293b;
+/* ==========================================
+   重构的 Markdown 输出
+   ========================================== */
+.markdown-output {
+  color: var(--text-main);
+  line-height: 1.8;
+  font-size: 15px;
+}
+.markdown-output h1, .markdown-output h2, .markdown-output h3 {
+  font-weight: 800; margin-top: 1.5em; margin-bottom: 0.5em; letter-spacing: -0.5px;
+}
+.markdown-output p { margin-bottom: 1em; }
+.markdown-output strong { font-weight: 900; }
+.markdown-output pre {
+  background: var(--text-main);
+  color: #fff;
+  padding: 20px;
+  margin: 1.5em 0;
+  border-radius: 0;
+}
+.markdown-output code { font-family: monospace; }
+.markdown-output blockquote {
+  border-left: 4px solid var(--accent-color);
+  padding-left: 20px;
+  margin: 1.5em 0;
+  font-style: italic;
+  color: var(--text-muted);
+}
+.markdown-output table {
+  width: 100%; border-collapse: collapse; margin: 1.5em 0;
+}
+.markdown-output th, .markdown-output td {
+  border: 1px solid var(--border-color);
+  padding: 12px; text-align: left;
+}
+.markdown-output th { background: #E4E4E7; font-weight: 800; }
+
+/* ==========================================
+   重构的财务报告样式 (扁平化黑白红)
+   ========================================== */
+.finance-report { font-family: inherit; }
+.fr-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--border-color); padding-bottom: 16px; margin-bottom: 24px; }
+.fr-header h3 { font-size: 24px; font-weight: 900; }
+.fr-badge { padding: 4px 12px; font-weight: 800; border: 2px solid var(--border-color); text-transform: uppercase; font-size: 12px; }
+.fr-badge-green { background: #fff; }
+.fr-badge-yellow { background: #FDE047; }
+.fr-badge-red { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+.fr-score-section { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; }
+.fr-score-bar { flex: 1; height: 16px; border: 2px solid var(--border-color); background: #fff; }
+.fr-score-fill { height: 100%; transition: width 0.5s; }
+.fr-score-text { font-size: 28px; font-weight: 900; }
+.fr-kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px;}
+.fr-kv { border: 2px solid var(--border-color); padding: 16px; background: #fff; }
+.fr-kv span { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+.fr-kv strong { font-size: 20px; font-weight: 900; }
+.fr-anomaly { border: 2px solid var(--border-color); padding: 20px; margin-bottom: 16px; background: #fff; }
+.fr-sev { padding: 2px 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-right: 12px; border: 1px solid var(--border-color); }
+.fr-sev-red { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+.fr-sev-yellow { background: #FDE047; }
+.fr-sev-green { background: #fff; }
+.fr-advice { background: var(--text-main); color: #fff; padding: 20px; margin-top: 30px; font-weight: 500; }
+
+/* ==========================================
+   功能组件 (Toast, Modal, PDF隐藏区)
+   ========================================== */
+.studio-toast {
+  position: fixed; bottom: 30px; right: 30px; z-index: 9999;
+  background: var(--text-main); color: #fff; padding: 16px 24px;
+  font-weight: 700; font-size: 14px; box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
+  animation: slideIn 0.3s ease-out;
+}
+.studio-toast.error { background: var(--accent-color); }
+
+.studio-modal-overlay {
+  position: fixed; inset: 0; background: rgba(244, 244, 245, 0.9);
+  backdrop-filter: blur(5px); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.studio-modal {
+  background: #fff; border: 4px solid var(--border-color);
+  width: 100%; max-width: 480px; padding: 40px;
+  box-shadow: 16px 16px 0 rgba(0,0,0,0.1);
 }
 
-.pdf-content .finance-report .fr-header h3 {
-  color: #0f172a;
+.pdf-export-area {
+  position: fixed; top: 0; left: 0; width: 794px; z-index: -9999;
+  background: #ffffff; color: #111; pointer-events: none; padding: 40px;
 }
+.pdf-export-area * { color: #000 !important; }
 
-.pdf-content .finance-report .fr-kv {
-  background: #f1f5f9;
-}
-
-.pdf-content .finance-report .fr-kv span {
-  color: #64748b;
-}
-
-.pdf-content .finance-report .fr-kv strong {
-  color: #1e293b;
-}
-
-.pdf-content .finance-report .fr-anomaly {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-}
-
-.pdf-content .finance-report .fr-anomaly-head {
-  color: #1e293b;
-}
-
-.pdf-content .finance-report .fr-advice {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1e40af;
-}
-
-/* ============================================================
-   强制修复 PDF 内部颜色（防止白屏鬼影）
-   ============================================================ */
-/* 强制把 PDF 导出区域里的文字变成深色，解决白板问题 */
-.pdf-export-area .markdown-output {
-  color: #1e293b !important; 
-}
-.pdf-export-area .markdown-output h1,
-.pdf-export-area .markdown-output h2,
-.pdf-export-area .markdown-output h3,
-.pdf-export-area .markdown-output strong {
-  color: #0f172a !important; 
-}
-.pdf-export-area .markdown-output code {
-  background: #f1f5f9 !important;
-  color: #2563eb !important;
-  border: 1px solid #e2e8f0;
-}
-.pdf-export-area .markdown-output blockquote {
-  border-left-color: #cbd5e1 !important;
-  color: #475569 !important;
-}
-
-
-/* 强制让导出区域内的所有文字在 PDF 里变黑 */
-#report-content .markdown-output, 
-#report-content .markdown-output * {
-  color: #000000 !important;
-}
+@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
