@@ -257,9 +257,9 @@ export const TOOLS_CONFIG = {
   },
   converter: {
     id: 'converter',
-    name: '格式化转换器',
+    name: '事项纪要·提炼解析',
     icon: '⇄',
-    description: '粘贴会议纪要或笔记，自动提取结构化待办清单',
+    description: '粘贴会议纪要或笔记，Aegis自动提取结构化待办清单',
     color: 'green',
     inputType: 'text',
     placeholder: `在此粘贴会议纪要或工作笔记，例如：
@@ -296,9 +296,9 @@ export const TOOLS_CONFIG = {
   },
   finance_audit: {
     id: 'finance_audit',
-    name: 'Aegis审计',
+    name: '财务核算·风险审计', 
     icon: '$',
-    description: '上传财务单据，系统自动审计异常并生成风险报告',
+    description: '上传财务单据，Aegis自动审计异常并生成风险报告',
     color: 'amber',
     inputType: 'file',
     accept: '.pdf,.docx,.doc,.txt,.md,.csv,.xlsx,.xls,.jpg,.jpeg,.png',
