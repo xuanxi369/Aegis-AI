@@ -3,12 +3,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { marked } from 'marked'
 import html2pdf from 'html2pdf.js'
 import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
-import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js'
+// 静态全量引入，安全对接你的 api.js
+import { callAI, callAudioAI, autoParseFile, audioToBase64, TOOLS_CONFIG } from './utils/api.js'
 
 marked.setOptions({ breaks: true, gfm: true })
 
 // ── 页面视图路由 ──────────────────────────────────────────
-// 'landing' | 'dashboard' | 'tool'
 const currentView = ref('landing')
 
 // ── 核心状态 ──────────────────────────────────────────────
@@ -23,7 +23,7 @@ const elapsedMs = ref(0)
 // ── 文件上传状态 ──────────────────────────────────────────
 const selectedFile = ref(null)
 const parsedText = ref('')
-const parseStatus = ref('') // '' | 'parsing' | 'done' | 'error'
+const parseStatus = ref('') 
 const isDragOver = ref(false)
 const ocrProgress = ref(0)
 const fileInputRef = ref(null)
@@ -50,10 +50,11 @@ function showToast(msg, type = 'success') {
 const showHistory = ref(false)
 const historyList = ref([])
 
-// ── 计算属性 ──────────────────────────────────────────────
-const tools = computed(() => Object.values(TOOLS_CONFIG))
-const currentTool = computed(() => selectedTool.value ? TOOLS_CONFIG[selectedTool.value] : null)
+// ── 计算属性 ──────────────────────────────
+const tools = computed(() => TOOLS_CONFIG ? Object.values(TOOLS_CONFIG) : [])
+const currentTool = computed(() => selectedTool.value && TOOLS_CONFIG ? TOOLS_CONFIG[selectedTool.value] : null)
 const isFileTool = computed(() => currentTool.value?.inputType === 'file')
+
 const renderedOutput = computed(() => {
   if (!output.value) return ''
   if (selectedTool.value === 'finance_audit') {
@@ -71,12 +72,11 @@ const elapsed = computed(() => {
   return `${(elapsedMs.value / 1000).toFixed(1)}s`
 })
 
-// ── 格式化序号 ────────────────────────────────────────────
 function formatNum(num) {
   return String(num).padStart(3, '0')
 }
 
-// ── 财务模块 JSON 渲染 (重构为极简黑白红风格) ──────────────
+// ── 财务模块 JSON 渲染 (极简风格) ─────────────────────────
 function renderFinanceJSON(json) {
   const statusColors = { PASS: 'green', WARNING: 'yellow', CRITICAL: 'red' }
   const statusLabels = { PASS: 'APPROVED', WARNING: 'WARNING', CRITICAL: 'CRITICAL' }
@@ -117,10 +117,7 @@ function renderFinanceJSON(json) {
       html += `</div>`
     })
   }
-
-  if (json.financial_advice) {
-    html += `<div class="fr-advice">ADVICE: ${json.financial_advice}</div>`
-  }
+  if (json.financial_advice) html += `<div class="fr-advice">ADVICE: ${json.financial_advice}</div>`
   html += `</div>`
   return html
 }
@@ -148,7 +145,7 @@ function resetWorkspace() {
   parseStatus.value = ''; ocrProgress.value = 0
 }
 
-// ── 文件处理 (逻辑完全保留) ────────────────────────────────
+// ── 文件处理 ──────────────────────────────────────────────
 function onFileSelect(e) { const file = e.target.files?.[0]; if (file) handleFile(file) }
 function onDrop(e) { e.preventDefault(); isDragOver.value = false; const file = e.dataTransfer.files?.[0]; if (file) handleFile(file) }
 function onDragOver(e) { e.preventDefault(); isDragOver.value = true }
@@ -207,7 +204,7 @@ function removeFile() {
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
-// ── 处理提交 (逻辑完全保留) ────────────────────────────────
+// ── 处理提交 ──────────────────────────────────────────────
 function fillExample() {
   if (currentTool.value?.example) { userInput.value = currentTool.value.example; showToast('EXAMPLE LOADED') }
 }
@@ -244,7 +241,6 @@ async function processFileInput() {
     let result; const ext = selectedFile.value.name.split('.').pop().toLowerCase()
     const audioExts = ['wav', 'flac', 'ape', 'mp3', 'aac', 'wma', 'aiff', 'mp4']
     if (audioExts.includes(ext)) {
-      const { audioToBase64 } = await import('./utils/api.js')
       const b64 = await audioToBase64(selectedFile.value)
       result = await callAudioAI(selectedTool.value, b64, selectedFile.value.type || 'audio/mpeg')
     } else {
@@ -258,7 +254,7 @@ async function processFileInput() {
   } finally { loading.value = false }
 }
 
-// ── 本地记录 (逻辑保留) ────────────────────────────────────
+// ── 本地记录 ──────────────────────────────────────────────
 function saveToHistory(toolType, input, result) {
   try {
     const key = `aegis_history_${toolType}`
@@ -275,7 +271,7 @@ function loadHistoryItem(item) {
   userInput.value = item.input; output.value = item.output; error.value = ''; showHistory.value = false; showToast('HISTORY LOADED')
 }
 
-// ── PDF 加密导出 (逻辑完全保留) ────────────────────────────
+// ── PDF 导出与复制 ────────────────────────────────────────
 async function secureExportToPDF(password) {
   if (!password) return;
   isExporting.value = true;
@@ -384,7 +380,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
       </header>
       
       <div class="tool-layout">
-        <aside class="tool-sidebar">
+        <aside class="tool-sidebar" v-if="currentTool">
           <div style="font-weight:900; font-size:40px; line-height:1; letter-spacing:-1px; margin-bottom:16px;">{{ currentTool.name }}</div>
           <p style="color:var(--text-muted); font-size:14px; margin-bottom:40px; line-height:1.6;">{{ currentTool.description }}</p>
           
@@ -400,7 +396,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
           </div>
         </aside>
 
-        <main class="tool-workspace">
+        <main class="tool-workspace" v-if="currentTool">
           <div v-if="!isFileTool" style="margin-bottom:40px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
               <label style="font-weight:800; font-size:14px;">INPUT DATA</label>
@@ -483,7 +479,6 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
         <p>CONTACT: Charles@iieao.com | millychck@gmail.com</p>
       </div>
     </div>
-
   </div>
 </template>
 
