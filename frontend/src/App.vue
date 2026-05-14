@@ -308,12 +308,12 @@ onUnmounted(() => {
           </button>
           
           <select :value="currentLang" @change="changeLang" class="glass-input !py-1.5 !px-4 !w-auto !rounded-full !text-sm font-bold cursor-pointer dark:bg-slate-800 outline-none">
-            <option value="zh-CN">🇨🇳 简体中文</option>
-            <option value="zh-TW">🇭🇰 繁體中文</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="ja">🇯🇵 日本語</option>
-            <option value="ko">🇰🇷 한국어</option>
-            <option value="de">🇩🇪 Deutsch</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="de">Deutsch</option>
           </select>
 
           <button v-if="currentView !== 'landing'" @click="goBackToDashboard" class="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors ml-2">
@@ -329,13 +329,14 @@ onUnmounted(() => {
         <div v-if="currentView === 'landing'" class="flex-1 flex flex-col items-center justify-center text-center py-20 min-h-[70vh]">
           <div class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/60 dark:bg-slate-800/60 border border-white dark:border-slate-700 shadow-sm text-sm text-blue-600 dark:text-blue-400 font-bold mb-8 backdrop-blur-md">
             <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            {{ t('全新视觉 · 企业效能引擎') }}
+            {{ t('IIEAO · 企业效能引擎') }}
           </div>
           
           <h1 class="text-5xl md:text-[5.5rem] font-black text-slate-800 dark:text-white tracking-tight leading-tight mb-8">
             {{ t('智驭未来办公') }} <br/> 
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
+          <h3 style="color: #000000;">✨面向传统企业文职人员的智能办公平台</h3>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
             {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
@@ -343,8 +344,8 @@ onUnmounted(() => {
         </div>
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
-          <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2">{{ t('欢迎回来，探索智能模块') }}</h2>
-          <p class="text-base text-slate-500 dark:text-slate-400 mb-10">{{ t('选择一个专门配置的 AI Agent 开始您的工作') }}</p>
+          <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2">{{ t('欢迎回来，探索Aegis') }}</h2>
+          <p class="text-base text-slate-500 dark:text-slate-400 mb-10">{{ t('选择一个专属配置的 Agent 开始您的工作') }}</p>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
@@ -423,14 +424,14 @@ onUnmounted(() => {
 
                 <div class="flex gap-3">
                   <button v-if="!loading" @click="processInput" :disabled="inputMode === 'file' ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-4 text-lg font-bold">
-                    {{ t('🚀 立即执行 AI 分析') }}
+                    {{ t('立即执行 Aegis 分析') }}
                   </button>
                   <div v-else class="flex-1 flex gap-3">
                     <button disabled class="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex justify-center items-center text-lg font-bold border border-slate-200 dark:border-slate-700">
-                      <span class="loading-dots px-3"><span></span><span></span><span></span></span> {{ t('深度运算中') }}
+                      <span class="loading-dots px-3"><span></span><span></span><span></span></span> {{ t('Aegis深度运算中') }}
                     </button>
                     <button @click="cancelAnalysis" class="px-8 py-4 bg-red-50 dark:bg-red-900/30 text-red-600 font-bold rounded-full hover:bg-red-100 transition shadow-sm border border-red-100 dark:border-red-900/50">
-                      {{ t('⏹ 取消') }}
+                      {{ t('取消') }}
                     </button>
                   </div>
                 </div>
@@ -449,12 +450,12 @@ onUnmounted(() => {
                 <div v-if="!output && !loading" class="flex-1 flex flex-col items-center justify-center text-center">
                   <div class="w-20 h-20 bg-blue-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center text-3xl mb-6 animate-pulse border border-blue-100 dark:border-slate-700 shadow-inner">✨</div>
                   <h4 class="text-xl font-bold mb-2 dark:text-white">{{ t('等待指令中') }}</h4>
-                  <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs">{{ t('请在左侧提供内容，AI 助手已准备就绪') }}</p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs">{{ t('请在左侧提供内容，Aegis已准备就绪') }}</p>
                 </div>
                 
                 <div v-else-if="loading" class="flex-1 flex flex-col items-center justify-center">
                   <div class="w-14 h-14 border-[6px] border-blue-100 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
-                  <p class="mt-5 text-lg font-bold text-blue-500">{{ t('深度运算中') }}</p>
+                  <p class="mt-5 text-lg font-bold text-blue-500">{{ t('Aegis深度运算中') }}</p>
                 </div>
 
                 <div v-else class="flex-1 overflow-y-auto markdown-output custom-scrollbar pr-3 text-base" v-html="renderedOutput"></div>
@@ -491,7 +492,7 @@ onUnmounted(() => {
           <div class="flex gap-3">
             <button @click="showPasswordModal = false" class="flex-1 py-3 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-base">{{ t('取消') }}</button>
             <button @click="secureExportToPDF(pdfPassword)" :disabled="isExporting" class="flex-1 py-3 rounded-full bg-blue-600 text-white font-bold text-base shadow-lg shadow-blue-500/30">
-              {{ isExporting ? t('深度运算中') : t('确认下载') }}
+              {{ isExporting ? t('Aegis深度运算中') : t('确认下载') }}
             </button>
           </div>
         </div>
@@ -500,7 +501,7 @@ onUnmounted(() => {
 
     <div id="report-content" class="pdf-export-area">
        <div class="p-10 font-sans text-black">
-         <h1 class="text-2xl font-bold border-b-2 border-black pb-4 mb-6">{{ t('Aegis AI 效能中枢 · 安全报告') }}</h1>
+         <h1 class="text-2xl font-bold border-b-2 border-black pb-4 mb-6">{{ t('Aegis 效能中枢 · 安全报告') }}</h1>
          <div v-html="renderedOutput" class="markdown-output !text-black"></div>
          <div class="mt-10 pt-4 border-t border-gray-300 text-xs text-gray-500">Powered by Aegis AI · {{ exportDate }}</div>
        </div>
