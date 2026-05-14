@@ -54,7 +54,7 @@ function animateBackground() {
   animationFrameId = requestAnimationFrame(animateBackground)
 }
 
-// ── 工作区逻辑 (完整恢复) ──────────────────────────
+// ── 工作区逻辑 ──────────────────────────
 const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
 const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
 const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false), historyList = ref([])
@@ -78,7 +78,6 @@ const renderedOutput = computed(() => {
   return marked.parse(output.value)
 })
 
-// ── 完整恢复的 Toast 逻辑 ──────────────────────────
 const toast = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
 function showToast(msg, type = 'success') {
@@ -102,7 +101,6 @@ function resetWorkspace() {
   currentRequestId++ 
 }
 
-// ── 完整恢复的财务 JSON 渲染逻辑 ──────────────────────────
 function renderFinanceJSON(json) {
   const score = json.risk_score ?? 0
   const scoreColor = score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : '#EF4444'
@@ -130,7 +128,6 @@ function renderFinanceJSON(json) {
   return html
 }
 
-// ── 完整恢复的文件解析逻辑 (含 OCR) ──────────────────────────
 function onFileSelect(e) { const f = e.target.files?.[0]; if (f) handleFile(f) }
 function onDrop(e) { e.preventDefault(); isDragOver.value = false; const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }
 function onDragOver(e) { e.preventDefault(); isDragOver.value = true }
@@ -172,7 +169,6 @@ async function parseImageOCR(file) {
 }
 function removeFile() { selectedFile.value = null; parseStatus.value = ''; if(fileInputRef.value) fileInputRef.value.value = '' }
 
-// ── 完整恢复的提交与打断逻辑 ──────────────────────────────
 function cancelAnalysis() {
   currentRequestId++ 
   loading.value = false
@@ -235,6 +231,13 @@ async function processFileInput() {
 }
 
 // ── 历史记录与其他工具 ──────────────────────────
+function goBackToDashboard() {
+  currentView.value = 'dashboard'
+  selectedTool.value = null
+  isOutputExpanded.value = false 
+  showHistory.value = false
+  resetWorkspace()
+}
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
 function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制成功'))) }
 function saveToHistory(t_id, i, r) { try { const k = `ag_${t_id}`; const h = JSON.parse(localStorage.getItem(k)||'[]'); h.unshift({id:Date.now(),input:i,output:r}); localStorage.setItem(k, JSON.stringify(h.slice(0,20))) } catch(e){} }
@@ -242,7 +245,6 @@ function loadHistory(t_id) { try { historyList.value = JSON.parse(localStorage.g
 function loadHistoryItem(item) { userInput.value = item.input; output.value = item.output; showHistory.value = false }
 function clearHistory() { localStorage.removeItem(`ag_${selectedTool.value}`); historyList.value = []; showHistory.value = false; showToast(t('历史记录已清空')) }
 
-// ── 完整恢复的 PDF 导出机制 ──────────────────────────
 async function secureExportToPDF(password) {
   if (!password) return; isExporting.value = true; const el = document.getElementById('report-content')
   try {
@@ -294,7 +296,7 @@ onUnmounted(() => {
         </div>
         
         <div class="flex items-center gap-4">
-          <button @click="toggleTheme" class="w-10 h-10 rounded-full bg-white/60 dark:bg-slate-800 border dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 transition">
+          <button @click="toggleTheme" class="w-10 h-10 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 transition">
             {{ isDark ? '🌙' : '☀️' }}
           </button>
           
@@ -308,7 +310,7 @@ onUnmounted(() => {
           </select>
 
           <button v-if="currentView !== 'landing'" @click="goBackToDashboard" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors ml-2">
-            {{ t('模块大厅') }}
+            {{ t('返回大厅') }}
           </button>
         </div>
       </div>
@@ -325,17 +327,27 @@ onUnmounted(() => {
           <button @click="currentView = 'dashboard'" class="btn-fluid px-10 py-4 text-xl">{{ t('进入功能中枢') }} <span>→</span></button>
         </div>
 
-        <div v-else-if="currentView === 'dashboard'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-10">
-          <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card p-8 rounded-[2.5rem] cursor-pointer group">
-            <div class="text-4xl mb-4 group-hover:scale-110 transition">{{ tool.icon }}</div>
-            <h3 class="text-xl font-bold mb-2 dark:text-white">{{ t(tool.name) }}</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-sm">{{ t(tool.description) }}</p>
+        <div v-else-if="currentView === 'dashboard'" class="py-10">
+          <h2 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">{{ t('欢迎回来，探索智能模块') }}</h2>
+          <p class="text-slate-500 dark:text-slate-400 mb-10">{{ t('选择一个专门配置的 AI Agent 开始您的工作') }}</p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
+              <div class="w-14 h-14 rounded-2xl bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-3xl mb-6 border border-white dark:border-slate-700 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
+              <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-3">{{ t(tool.name) }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10">{{ t(tool.description) }}</p>
+              
+              <div class="flex justify-between items-center text-sm font-medium">
+                <span class="text-blue-500 group-hover:text-pink-500 transition-colors">{{ t('开始使用') }} ↗</span>
+                <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <div v-else-if="currentView === 'tool'">
           <div class="glass-panel p-10 rounded-[3rem]">
-            <div class="flex justify-between items-center mb-10 border-b dark:border-slate-800 pb-8">
+            <div class="flex justify-between items-center mb-10 border-b border-slate-200 dark:border-slate-800 pb-8">
               <div class="flex items-center gap-4">
                 <div class="text-4xl p-4 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">{{ currentTool.icon }}</div>
                 <div>
@@ -358,7 +370,7 @@ onUnmounted(() => {
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                   <div v-for="h in historyList" :key="h.id" @click="loadHistoryItem(h)" class="p-4 hover:bg-white dark:hover:bg-slate-700 cursor-pointer rounded-2xl text-sm border border-slate-100 dark:border-slate-600 transition group flex flex-col justify-between">
                     <div class="text-slate-700 dark:text-slate-300 line-clamp-3 mb-3">{{ h.input }}</div>
-                    <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition text-xs">{{ t('载入此记录 →') }}</span>
+                    <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition text-xs font-bold">{{ t('载入此记录 →') }}</span>
                   </div>
                 </div>
               </div>
@@ -376,14 +388,14 @@ onUnmounted(() => {
                   <button @click="inputMode='file'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='file'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md border border-slate-100 dark:border-slate-600':'text-slate-500 dark:text-slate-400']">{{ t('📄 完整文件解析') }}</button>
                 </div>
 
-                <textarea v-if="inputMode==='text'" v-model="userInput" :placeholder="t(currentTool.placeholder || '在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[250px] resize-none"></textarea>
+                <textarea v-if="inputMode==='text'" v-model="userInput" :placeholder="t(currentTool.placeholder) || t('在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[250px] resize-none"></textarea>
                 
                 <div v-else class="flex flex-col">
-                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone min-h-[250px] flex flex-col items-center justify-center dark:border-slate-700', isDragOver&&'file-drop-active']">
+                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone min-h-[250px] flex flex-col items-center justify-center dark:border-slate-700 transition', isDragOver&&'file-drop-active']">
                     <input ref="fileInputRef" type="file" @change="onFileSelect" class="hidden" />
                     <span class="text-4xl mb-4 bg-white dark:bg-slate-800 w-16 h-16 rounded-full flex items-center justify-center shadow-sm">📤</span>
-                    <p class="font-bold dark:text-slate-300 mb-2">{{ t('点击或拖拽上传文件') }}</p>
-                    <p class="text-xs text-slate-500">{{ t(currentTool.acceptHint || '支持 PDF, Word, TXT 等格式文本提取') }}</p>
+                    <p class="font-bold text-slate-700 dark:text-slate-300 mb-2">{{ t('点击或拖拽上传文件') }}</p>
+                    <p class="text-xs text-slate-500">{{ t(currentTool.acceptHint) || t('支持 PDF, Word, TXT 等格式文本提取') }}</p>
                   </div>
                   <div v-else class="bg-white/60 dark:bg-slate-800/60 p-6 rounded-[2rem] border border-white dark:border-slate-700 shadow-sm min-h-[250px] flex flex-col justify-center">
                     <div class="flex items-center gap-4 mb-4">
@@ -394,7 +406,7 @@ onUnmounted(() => {
                       </div>
                       <button @click="removeFile" class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/30 text-red-500 hover:bg-red-100 flex justify-center items-center">✕</button>
                     </div>
-                    <div v-if="parseStatus === 'parsing'" class="text-sm text-blue-600 flex items-center gap-2"><span class="loading-dots"><span></span><span></span><span></span></span> 解析中...</div>
+                    <div v-if="parseStatus === 'parsing'" class="text-sm text-blue-600 flex items-center gap-2"><span class="loading-dots"><span></span><span></span><span></span></span> 核心引擎解析中...</div>
                     <div v-if="parseStatus === 'done'" class="text-sm text-green-600 font-bold bg-green-50 dark:bg-green-900/30 px-4 py-2 rounded-xl w-max">{{ t('✅ 解析完成') }}</div>
                   </div>
                 </div>
@@ -404,7 +416,7 @@ onUnmounted(() => {
                     {{ t('🚀 立即执行 AI 分析') }}
                   </button>
                   <div v-else class="flex-1 flex gap-3">
-                    <button disabled class="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex justify-center items-center">
+                    <button disabled class="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex justify-center items-center font-bold">
                       <span class="loading-dots px-3 py-1"><span></span><span></span><span></span></span> {{ t('深度运算中') }}
                     </button>
                     <button @click="cancelAnalysis" class="px-8 py-4 bg-red-50 dark:bg-red-900/30 text-red-600 font-bold rounded-full hover:bg-red-100 transition shadow-sm border border-red-100 dark:border-red-900/50">
@@ -425,7 +437,7 @@ onUnmounted(() => {
                 </div>
 
                 <div v-if="!output && !loading" class="flex-1 flex flex-col items-center justify-center text-center">
-                  <div class="w-20 h-20 bg-blue-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-3xl mb-6 animate-pulse border border-blue-100 dark:border-slate-700">✨</div>
+                  <div class="w-20 h-20 bg-blue-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-3xl mb-6 animate-pulse border border-blue-100 dark:border-slate-700 shadow-inner">✨</div>
                   <h4 class="text-xl font-bold mb-2 dark:text-white">{{ t('等待指令中') }}</h4>
                   <p class="text-slate-500 dark:text-slate-400 max-w-xs">{{ t('请在左侧提供内容，AI 助手已准备就绪') }}</p>
                 </div>
@@ -464,6 +476,7 @@ onUnmounted(() => {
         <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl p-8 rounded-[2rem] border border-white dark:border-slate-700 shadow-2xl w-full max-w-md text-center">
           <div class="w-16 h-16 bg-blue-50 dark:bg-slate-900 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🔒</div>
           <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">{{ t('安全导出设定') }}</h3>
+          <p class="text-sm text-slate-500 mb-6">为保护企业敏感数据，请设置查看密码</p>
           <input v-model="pdfPassword" type="password" placeholder="输入文档密码" class="glass-input mb-6 bg-slate-50 dark:bg-slate-900 focus:bg-white" autofocus />
           <div class="flex gap-3">
             <button @click="showPasswordModal = false" class="flex-1 py-3 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">{{ t('取消') }}</button>
@@ -477,17 +490,10 @@ onUnmounted(() => {
 
     <div id="report-content" class="pdf-export-area">
        <div class="p-10 font-sans text-black">
-         <h1 class="text-2xl font-bold border-b-2 border-black pb-4 mb-6">{{ t('Aegis AI 效能中枢 · 安全报告') }}</h1>
+         <h1 class="text-2xl font-bold border-b-2 border-black pb-4 mb-6">Aegis AI 效能中枢 · 安全报告</h1>
          <div v-html="renderedOutput" class="markdown-output !text-black"></div>
          <div class="mt-10 pt-4 border-t border-gray-300 text-xs text-gray-500">Powered by Aegis AI · {{ exportDate }}</div>
        </div>
     </div>
   </div>
 </template>
-
-<style>
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.6); }
-</style>
