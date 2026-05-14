@@ -4,17 +4,15 @@ import { marked } from 'marked'
 import html2pdf from 'html2pdf.js'
 import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
 import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js'
-import { t, currentLang } from './utils/i18n.js' // 👈 引入翻译引擎
+import { t, currentLang } from './utils/i18n.js' 
 
 marked.setOptions({ breaks: true, gfm: true })
 
-// ── 核心视图状态 ─────────────────────────
 const currentView = ref('landing')
 const selectedTool = ref(null)
 const isOutputExpanded = ref(false)
 const inputMode = ref('text') 
 
-// ── 日夜模式切换逻辑 (Theme Switcher) ──────────
 const isDark = ref(localStorage.getItem('aegis_theme') === 'dark')
 
 function toggleTheme() {
@@ -28,11 +26,7 @@ function toggleTheme() {
   }
 }
 
-// ── 动态交互背景状态 ────────────────────
-const targetX = ref(0)
-const targetY = ref(0)
-const currentX = ref(0)
-const currentY = ref(0)
+const targetX = ref(0), targetY = ref(0), currentX = ref(0), currentY = ref(0)
 let animationFrameId = null
 
 function handlePointerMove(e) {
@@ -48,34 +42,20 @@ function animateBackground() {
   animationFrameId = requestAnimationFrame(animateBackground)
 }
 
-// ── 工作区状态 ──────────────────────────
-const loading = ref(false)
-const output = ref('')
-const error = ref('')
-const userInput = ref('')
-const startTime = ref(0)
-const elapsedMs = ref(0)
+const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
 let currentRequestId = 0 
-const selectedFile = ref(null)
-const parsedText = ref('')
-const parseStatus = ref('') 
-const isDragOver = ref(false)
-const fileInputRef = ref(null)
-
-const showPasswordModal = ref(false)
-const pdfPassword = ref('')
-const isExporting = ref(false)
-
+const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), isDragOver = ref(false), fileInputRef = ref(null)
+const showPasswordModal = ref(false), pdfPassword = ref(''), isExporting = ref(false)
 const toast = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
+
 function showToast(msg, type = 'success') {
   clearTimeout(toastTimer)
   toast.value = { show: true, message: msg, type }
   toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
 }
 
-const showHistory = ref(false)
-const historyList = ref([])
+const showHistory = ref(false), historyList = ref([])
 
 const tools = computed(() => Object.values(TOOLS_CONFIG))
 const currentTool = computed(() => selectedTool.value ? TOOLS_CONFIG[selectedTool.value] : null)
@@ -186,9 +166,7 @@ async function secureExportToPDF(password) {
 }
 
 onMounted(() => {
-  // 初始化系统日夜模式
   if (isDark.value) document.documentElement.classList.add('dark')
-  
   document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='Enter') processInput() })
   window.addEventListener('mousemove', handlePointerMove)
   window.addEventListener('touchmove', handlePointerMove, { passive: true })
@@ -209,6 +187,15 @@ onUnmounted(() => {
       <div class="orb-container" :style="{ transform: `translate(${currentX * -0.1}px, ${currentY * -0.1}px)` }"><div class="orb orb-pink"></div></div>
       <div class="orb-container" :style="{ transform: `translate(${currentX * 0.05}px, ${currentY * 0.05}px)` }"><div class="orb orb-mint"></div></div>
     </div>
+
+    <transition name="fade">
+      <div v-if="toast.show" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full bg-white/80 backdrop-blur-xl border border-white shadow-xl text-sm font-medium text-slate-800 flex items-center gap-2">
+        <span v-if="toast.type==='success'" class="text-green-500">✓</span>
+        <span v-else-if="toast.type==='warn'" class="text-yellow-500">!</span>
+        <span v-else class="text-red-500">✕</span>
+        {{ toast.message }}
+      </div>
+    </transition>
 
     <header class="fixed top-0 w-full z-50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-b border-white/50 dark:border-slate-700">
       <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -260,8 +247,8 @@ onUnmounted(() => {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
               <div class="w-14 h-14 rounded-2xl bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
-              <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-3">{{ tool.name }}</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10">{{ tool.description }}</p>
+              <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-3">{{ t(tool.name) }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10">{{ t(tool.description) }}</p>
               <div class="flex justify-between items-center text-sm font-medium">
                 <span class="text-blue-500 group-hover:text-pink-500 transition-colors">{{ t('开始使用') }}</span>
                 <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
@@ -280,7 +267,8 @@ onUnmounted(() => {
               <div class="flex items-center gap-5">
                 <div class="w-16 h-16 rounded-3xl bg-white dark:bg-slate-800 flex items-center justify-center text-4xl">{{ currentTool.icon }}</div>
                 <div>
-                  <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white">{{ currentTool.name }}</h2>
+                  <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white">{{ t(currentTool.name) }}</h2>
+                  <p class="text-slate-500 mt-2">{{ t(currentTool.description) }}</p>
                 </div>
               </div>
               <button @click="showHistory = !showHistory" class="px-5 py-2.5 rounded-full font-bold bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
@@ -301,7 +289,7 @@ onUnmounted(() => {
                 </div>
 
                 <div v-if="inputMode === 'text'" class="flex flex-col">
-                  <textarea v-model="userInput" class="glass-input min-h-[250px] resize-none"></textarea>
+                  <textarea v-model="userInput" :placeholder="t(currentTool.placeholder || '在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[250px] resize-none"></textarea>
                 </div>
 
                 <div v-if="inputMode === 'file'" class="flex flex-col">
@@ -309,6 +297,7 @@ onUnmounted(() => {
                     <input ref="fileInputRef" type="file" @change="onFileSelect" class="hidden" />
                     <div class="text-2xl mb-4 text-blue-500">📤</div>
                     <p class="font-bold text-slate-700 dark:text-slate-300 mb-2">{{ t('点击或拖拽上传文件') }}</p>
+                    <p class="text-xs text-slate-500">{{ t(currentTool.acceptHint || '支持 PDF, Word, TXT 等格式文本提取') }}</p>
                   </div>
                   <div v-else class="bg-white/60 dark:bg-slate-800/60 p-6 rounded-[2rem] min-h-[250px] flex flex-col justify-center">
                     <p class="font-bold text-slate-800 dark:text-white">{{ selectedFile.name }}</p>
