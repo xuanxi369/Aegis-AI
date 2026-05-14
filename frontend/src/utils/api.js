@@ -236,7 +236,7 @@ export const TOOLS_CONFIG = {
   auditor: {
     id: 'auditor',
     name: '合同/文档审核',
-    icon: '📁',
+    icon: '§',
     description: '粘贴合同或文档文本，AI 自动扫描合规风险',
     color: 'pink',
     inputType: 'text',
@@ -258,7 +258,7 @@ export const TOOLS_CONFIG = {
   converter: {
     id: 'converter',
     name: '格式化转换器',
-    icon: '🔄',
+    icon: '⇄',
     description: '粘贴会议纪要或笔记，AI 提取标准任务清单',
     color: 'green',
     inputType: 'text',
@@ -282,10 +282,11 @@ export const TOOLS_CONFIG = {
   },
 
   // ── 新增三大模块 ──────────────────────────────────────
+  //👤
   hr_resume: {
     id: 'hr_resume',
     name: '人事·简历透视',
-    icon: '👤',
+    icon: 'Ω',
     description: '上传简历文件，AI 深度拆解分析候选人潜力与风险',
     color: 'violet',
     inputType: 'file',
