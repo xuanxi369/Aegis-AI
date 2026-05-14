@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // 增加这一行，开启类名驱动的暗黑模式
   content: [
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
