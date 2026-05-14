@@ -12,7 +12,12 @@ const currentView = ref('landing')
 const selectedTool = ref(null)
 const isOutputExpanded = ref(false)
 
-// ── 动态交互背景状态 (新增物理追踪逻辑) ────────────────────
+// ── 新增：输入模式无缝切换器 ──────────────────────────
+// 'text' 模式：仅提供文本输入框
+// 'file' 模式：提供拖拽上传区域
+const inputMode = ref('text') 
+
+// ── 动态交互背景状态 ────────────────────
 const targetX = ref(0)
 const targetY = ref(0)
 const currentX = ref(0)
@@ -20,16 +25,13 @@ const currentY = ref(0)
 let animationFrameId = null
 
 function handlePointerMove(e) {
-  // 兼容鼠标和触摸事件
   const clientX = e.touches ? e.touches[0].clientX : e.clientX
   const clientY = e.touches ? e.touches[0].clientY : e.clientY
-  // 计算基于屏幕中心点的偏移量
   targetX.value = clientX - window.innerWidth / 2
   targetY.value = clientY - window.innerHeight / 2
 }
 
 function animateBackground() {
-  // 引入缓动算法 (Easing)，使得跟随平滑自然而不生硬
   currentX.value += (targetX.value - currentX.value) * 0.05
   currentY.value += (targetY.value - currentY.value) * 0.05
   animationFrameId = requestAnimationFrame(animateBackground)
@@ -77,7 +79,7 @@ const historyList = ref([])
 // ── 计算属性 ──────────────────────────────────────────────
 const tools = computed(() => Object.values(TOOLS_CONFIG))
 const currentTool = computed(() => selectedTool.value ? TOOLS_CONFIG[selectedTool.value] : null)
-const isFileTool = computed(() => currentTool.value?.inputType === 'file')
+// 我们不再使用硬编码的 isFileTool，而是完全由用户选择的 inputMode 决定
 const renderedOutput = computed(() => {
   if (!output.value) return ''
   if (selectedTool.value === 'finance_audit') {
@@ -100,6 +102,10 @@ function goBackToDashboard() {
 function openTool(toolId) {
   selectedTool.value = toolId
   resetWorkspace()
+  
+  // 智能继承：虽然所有模块都支持两种模式，但我们依然让它默认选中该模块最常用的模式
+  inputMode.value = currentTool.value.inputType || 'text' 
+  
   currentView.value = 'tool'
   loadHistory(toolId)
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -190,13 +196,16 @@ function cancelAnalysis() {
 
 async function processInput() {
   if (loading.value) return
-  if (isFileTool.value) {
+  
+  // 核心变更：根据当前激活的模式来决定执行哪种分析逻辑
+  if (inputMode.value === 'file') {
     if (!selectedFile.value || parseStatus.value !== 'done') return showToast('⚠️ 请先上传并等待解析完成', 'warn')
     return await processFileInput()
+  } else {
+    const text = userInput.value.trim()
+    if (text.length < 10) return showToast('⚠️ 内容过短', 'warn')
+    await processTextInput(text)
   }
-  const text = userInput.value.trim()
-  if (text.length < 10) return showToast('⚠️ 内容过短', 'warn')
-  await processTextInput(text)
 }
 
 async function processTextInput(text) {
@@ -276,8 +285,6 @@ async function secureExportToPDF(password) {
 
 onMounted(() => {
   document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='Enter') processInput() })
-  
-  // 挂载交互背景监听器
   window.addEventListener('mousemove', handlePointerMove)
   window.addEventListener('touchmove', handlePointerMove, { passive: true })
   animateBackground()
@@ -356,7 +363,7 @@ onUnmounted(() => {
               <p class="text-sm text-slate-500 leading-relaxed mb-6 h-10">{{ tool.description }}</p>
               <div class="flex justify-between items-center text-sm font-medium">
                 <span class="text-blue-500 group-hover:text-pink-500 transition-colors">开始使用 ↗</span>
-                <span v-if="tool.inputType==='file'" class="px-3 py-1 bg-slate-100 rounded-full text-xs text-slate-500">支持文件</span>
+                <span class="px-3 py-1 bg-slate-100 rounded-full text-xs text-slate-500 font-bold">全模式支持</span>
               </div>
             </div>
           </div>
@@ -405,23 +412,32 @@ onUnmounted(() => {
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-start">
               
               <div class="lg:col-span-5 flex flex-col">
-                <h3 class="text-lg font-bold text-slate-800 mb-4 flex justify-between items-center">
-                  提供分析内容
-                  <button v-if="!isFileTool" @click="fillExample" class="text-xs font-medium px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition">填入示例</button>
-                </h3>
-
-                <div v-if="!isFileTool" class="flex flex-col">
-                  <textarea v-model="userInput" :placeholder="currentTool.placeholder" class="glass-input min-h-[300px] resize-none"></textarea>
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-lg font-bold text-slate-800">提供分析内容</h3>
+                  <button v-if="inputMode === 'text'" @click="fillExample" class="text-xs font-medium px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition">填入示例</button>
                 </div>
 
-                <div v-if="isFileTool" class="flex flex-col">
-                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone flex flex-col items-center justify-center min-h-[300px]', isDragOver&&'file-drop-active']">
-                    <input ref="fileInputRef" type="file" :accept="currentTool.accept" @change="onFileSelect" class="hidden" />
+                <div class="flex p-1.5 bg-white/50 backdrop-blur-md border border-white/80 rounded-[1.25rem] mb-6 shadow-inner relative">
+                  <button @click="inputMode = 'text'" :class="['flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 z-10 flex items-center justify-center gap-2', inputMode === 'text' ? 'bg-white text-blue-600 shadow-md border border-slate-100' : 'text-slate-500 hover:text-slate-700']">
+                    📝 文本段落描述
+                  </button>
+                  <button @click="inputMode = 'file'" :class="['flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 z-10 flex items-center justify-center gap-2', inputMode === 'file' ? 'bg-white text-blue-600 shadow-md border border-slate-100' : 'text-slate-500 hover:text-slate-700']">
+                    📄 完整文件解析
+                  </button>
+                </div>
+
+                <div v-if="inputMode === 'text'" class="flex flex-col animate-[fade-in_0.3s_ease-out]">
+                  <textarea v-model="userInput" :placeholder="currentTool.placeholder || '在此输入您需要分析的具体段落或描述内容...'" class="glass-input min-h-[250px] resize-none"></textarea>
+                </div>
+
+                <div v-if="inputMode === 'file'" class="flex flex-col animate-[fade-in_0.3s_ease-out]">
+                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone flex flex-col items-center justify-center min-h-[250px]', isDragOver&&'file-drop-active']">
+                    <input ref="fileInputRef" type="file" :accept="currentTool.accept || '.txt,.pdf,.docx,.doc'" @change="onFileSelect" class="hidden" />
                     <div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center text-2xl mb-4 text-blue-500">📤</div>
                     <p class="font-bold text-slate-700 mb-2">点击或拖拽上传文件</p>
-                    <p class="text-xs text-slate-500">{{ currentTool.acceptHint }}</p>
+                    <p class="text-xs text-slate-500">{{ currentTool.acceptHint || '支持 PDF, Word, TXT 等格式文本提取' }}</p>
                   </div>
-                  <div v-else class="bg-white/60 p-6 rounded-[2rem] border border-white shadow-sm">
+                  <div v-else class="bg-white/60 p-6 rounded-[2rem] border border-white shadow-sm min-h-[250px] flex flex-col justify-center">
                     <div class="flex items-center gap-4 mb-4">
                       <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-xl">📄</div>
                       <div class="flex-1 min-w-0">
@@ -430,13 +446,13 @@ onUnmounted(() => {
                       </div>
                       <button @click="removeFile" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex justify-center items-center">✕</button>
                     </div>
-                    <div v-if="parseStatus === 'parsing'" class="text-sm text-blue-600 flex items-center gap-2"><span class="loading-dots"><span></span><span></span><span></span></span> 解析中...</div>
-                    <div v-if="parseStatus === 'done'" class="text-sm text-green-600 font-medium">✓ 文件就绪</div>
+                    <div v-if="parseStatus === 'parsing'" class="text-sm text-blue-600 flex items-center gap-2"><span class="loading-dots"><span></span><span></span><span></span></span> 核心引擎深度解析中...</div>
+                    <div v-if="parseStatus === 'done'" class="text-sm text-green-600 font-bold bg-green-50 px-4 py-2 rounded-xl inline-block w-max">✓ 文件已就绪</div>
                   </div>
                 </div>
 
                 <div class="mt-6 flex gap-3">
-                  <button v-if="!loading" @click="processInput" :disabled="isFileTool ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-4 text-lg shadow-xl shadow-blue-500/20 flex justify-center items-center">
+                  <button v-if="!loading" @click="processInput" :disabled="inputMode === 'file' ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-4 text-lg shadow-xl shadow-blue-500/20 flex justify-center items-center">
                     🚀 立即执行 AI 分析
                   </button>
                   <div v-else class="flex-1 flex gap-3">
@@ -531,4 +547,10 @@ onUnmounted(() => {
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.6); }
+
+/* 为内容切换增加淡入动画 */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
