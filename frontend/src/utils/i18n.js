@@ -31,3 +31,4 @@ export const dictionary = {
     '🚀 立即执行 AI 分析': '🚀 分析を実行'
   }
 }
+
