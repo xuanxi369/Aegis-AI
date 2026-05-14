@@ -208,9 +208,9 @@ export const TOOLS_CONFIG = {
   // ── 原有三大模块 ──────────────────────────────────────
   writer: {
     id: 'writer',
-    name: '智能文书助手',
-    icon: '📃',
-    description: '输入零散要点，AI 自动转换为结构化职场公文',
+    name: 'Aegis文书助手',
+    icon: '✎',
+    description: '零散要点，即可生成专业职场公文',
     color: 'blue',
     inputType: 'text',
     placeholder: `在此输入你的周报要点，例如：
@@ -235,9 +235,9 @@ export const TOOLS_CONFIG = {
   },
   auditor: {
     id: 'auditor',
-    name: '合同/文档审核',
+    name: '合同·文档审核',
     icon: '§',
-    description: '粘贴合同或文档文本，AI 自动扫描合规风险',
+    description: '全量扫描文本条款，深度评估法务合规风险',
     color: 'pink',
     inputType: 'text',
     placeholder: `在此粘贴需要审核的合同或文档内容，例如：
@@ -259,7 +259,7 @@ export const TOOLS_CONFIG = {
     id: 'converter',
     name: '格式化转换器',
     icon: '⇄',
-    description: '粘贴会议纪要或笔记，AI 提取标准任务清单',
+    description: '粘贴会议纪要或笔记，自动提取结构化待办清单',
     color: 'green',
     inputType: 'text',
     placeholder: `在此粘贴会议纪要或工作笔记，例如：
@@ -285,9 +285,9 @@ export const TOOLS_CONFIG = {
   //👤
   hr_resume: {
     id: 'hr_resume',
-    name: '人事·简历透视',
+    name: '简历·面向HR',
     icon: 'Ω',
-    description: '上传简历文件，AI 深度拆解分析候选人潜力与风险',
+    description: '多维度解析履历数据，构建候选人胜任力画像',
     color: 'violet',
     inputType: 'file',
     accept: '.pdf,.docx,.doc,.txt,.md,.csv,.xlsx,.xls',
@@ -307,9 +307,9 @@ export const TOOLS_CONFIG = {
   },
   ocr_corrector: {
     id: 'ocr_corrector',
-    name: '识别·智能纠错',
-    icon: '🔎',
-    description: '上传图片/音频，AI 精准识别并结构化输出',
+    name: '图片/音频内容识别',
+    icon: '📁',
+    description: '上传图片/音频，实现高精度数据总结归纳',
     color: 'cyan',
     inputType: 'file',
     accept: '.jpg,.jpeg,.png,.wav,.flac,.ape,.mp3,.aac,.wma,.aiff,.mp4',
