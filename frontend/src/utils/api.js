@@ -208,9 +208,9 @@ export const TOOLS_CONFIG = {
   // ── 原有三大模块 ──────────────────────────────────────
   writer: {
     id: 'writer',
-    name: 'Aegis文书助手',
+    name: '职场公文',
     icon: '✎',
-    description: '零散要点，即可生成专业职场公文',
+    description: '只需零散要点，Aegis即可生成专业职场公文',
     color: 'blue',
     inputType: 'text',
     placeholder: `在此输入你的周报要点，例如：
@@ -235,7 +235,7 @@ export const TOOLS_CONFIG = {
   },
   auditor: {
     id: 'auditor',
-    name: '合同·文档审核',
+    name: '合同文档·审核',
     icon: '§',
     description: '全量扫描文本条款，深度评估法务合规风险',
     color: 'pink',
@@ -257,7 +257,7 @@ export const TOOLS_CONFIG = {
   },
   converter: {
     id: 'converter',
-    name: '事项纪要·提炼解析',
+    name: '事项纪要',
     icon: '⇄',
     description: '粘贴会议纪要或笔记，Aegis自动提取结构化待办清单',
     color: 'green',
@@ -309,7 +309,7 @@ export const TOOLS_CONFIG = {
     id: 'ocr_corrector',
     name: '图片/音频内容识别',
     icon: '📁',
-    description: '上传图片/音频，实现高精度数据总结归纳',
+    description: '上传图片/音频，实现高精度数据总结与归纳',
     color: 'cyan',
     inputType: 'file',
     accept: '.jpg,.jpeg,.png,.wav,.flac,.ape,.mp3,.aac,.wma,.aiff,.mp4',
