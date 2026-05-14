@@ -305,16 +305,16 @@ onUnmounted(() => {
         
         <div class="flex items-center gap-5">
           <button @click="toggleTheme" class="w-11 h-11 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-110 transition text-xl">
-            {{ isDark ? '🌙' : '☀️' }}
+            {{ isDark ? '月' : '日' }}
           </button>
           
           <select :value="currentLang" @change="changeLang" class="glass-input !py-2 !px-5 !w-auto !rounded-full !text-base font-bold cursor-pointer dark:bg-slate-800 outline-none">
-            <option value="zh-CN">🇨🇳 简体中文</option>
-            <option value="zh-TW">🇭🇰 繁體中文</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="ja">🇯🇵 日本語</option>
-            <option value="ko">🇰🇷 한국어</option>
-            <option value="de">🇩🇪 Deutsch</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="de">Deutsch</option>
           </select>
 
           <button v-if="currentView !== 'landing'" @click="goBackToDashboard" class="text-base font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors ml-2">
@@ -330,22 +330,23 @@ onUnmounted(() => {
         <div v-if="currentView === 'landing'" class="flex-1 flex flex-col items-center justify-center text-center py-20 min-h-[70vh]">
           <div class="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/60 dark:bg-slate-800/60 border border-white dark:border-slate-700 shadow-sm text-base text-blue-600 dark:text-blue-400 font-bold mb-12 backdrop-blur-md">
             <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-            {{ t('全新视觉 · 企业效能引擎') }}
+            {{ t('企业效能引擎 · 共识加密算法 ') }}
           </div>
           
           <h1 class="text-6xl md:text-[7rem] font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-12">
-            {{ t('智驭未来办公') }} <br/> 
-            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
+            {{ t('IIEAO 效能中枢') }} <br/> 
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('落地现实，智驭未来') }}</span>
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100">{{ t('面向传统企业文职人员的中枢办公') }}</span>
           </h1>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-2xl px-12 py-5 shadow-2xl shadow-blue-500/30 flex items-center gap-4 group mt-6">
-            {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
+            {{ t('键入中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
           </button>
         </div>
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
-          <h2 class="text-4xl font-black text-slate-800 dark:text-white mb-3">{{ t('欢迎回来，探索智能模块') }}</h2>
-          <p class="text-lg text-slate-500 dark:text-slate-400 mb-12">{{ t('选择一个专门配置的 AI Agent 开始您的工作') }}</p>
+          <h2 class="text-4xl font-black text-slate-800 dark:text-white mb-3">{{ t('让AI处理繁琐文书·让效率指数级提升') }}</h2>
+          <p class="text-lg text-slate-500 dark:text-slate-400 mb-12">{{ t('选择一个专属配置的 AI Agent 开始您的工作') }}</p>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-10 group rounded-[2.5rem]">
@@ -424,14 +425,14 @@ onUnmounted(() => {
 
                 <div class="flex gap-4">
                   <button v-if="!loading" @click="processInput" :disabled="inputMode === 'file' ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-5 text-xl font-black">
-                    {{ t('🚀 立即执行 AI 分析') }}
+                    {{ t('立即执行 AI 分析') }}
                   </button>
                   <div v-else class="flex-1 flex gap-4">
                     <button disabled class="flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex justify-center items-center text-xl font-black border border-slate-200 dark:border-slate-700">
                       <span class="loading-dots px-4"><span></span><span></span><span></span></span> {{ t('深度运算中') }}
                     </button>
                     <button @click="cancelAnalysis" class="px-10 py-5 bg-red-50 dark:bg-red-900/30 text-red-600 font-black rounded-full hover:bg-red-100 transition shadow-sm border border-red-100">
-                      {{ t('⏹ 取消') }}
+                      {{ t('取消') }}
                     </button>
                   </div>
                 </div>
