@@ -336,7 +336,7 @@ onUnmounted(() => {
           <h1 class="text-6xl md:text-[7rem] font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-12">
             {{ t('IIEAO 效能中枢') }} <br/> 
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('落地现实，智驭未来') }}</span>
-            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100">{{ t('面向传统企业文职人员的中枢办公') }}</span>
+             <h3 style="color: black;">面向传统企业文职人员的智能办公平台</h3>
           </h1>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-2xl px-12 py-5 shadow-2xl shadow-blue-500/30 flex items-center gap-4 group mt-6">
