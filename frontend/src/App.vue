@@ -10,17 +10,16 @@ marked.setOptions({ breaks: true, gfm: true })
 // ── 核心视图状态 ─────────────────────────
 const currentView = ref('landing')
 const selectedTool = ref(null)
-
-// ── 展开全屏状态 (新增) ─────────────────────────
 const isOutputExpanded = ref(false)
 
-// ── 工作区状态 ──────────────────────────────────────────────
+// ── 工作区与并发控制状态 ────────────────────────────────────
 const loading = ref(false)
 const output = ref('')
 const error = ref('')
 const userInput = ref('')
 const startTime = ref(0)
 const elapsedMs = ref(0)
+let currentRequestId = 0 // 用于精准拦截被取消的请求
 
 // ── 文件上传状态 ──────────────────────────────────────────
 const selectedFile = ref(null)
@@ -48,7 +47,7 @@ function showToast(msg, type = 'success') {
   toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
 }
 
-// ── 历史记录 ──────────────────────────────────────────────
+// ── 历史记录状态 ──────────────────────────────────────────
 const showHistory = ref(false)
 const historyList = ref([])
 
@@ -71,7 +70,8 @@ function enterApp() { currentView.value = 'dashboard' }
 function goBackToDashboard() {
   currentView.value = 'dashboard'
   selectedTool.value = null
-  isOutputExpanded.value = false // 退出时重置全屏状态
+  isOutputExpanded.value = false 
+  showHistory.value = false
   resetWorkspace()
 }
 function openTool(toolId) {
@@ -113,6 +113,7 @@ function renderFinanceJSON(json) {
 function resetWorkspace() {
   output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0
   showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0
+  currentRequestId++ // 重置时作废进行中的请求
 }
 
 // ── 文件处理逻辑 ──────────────────────────
@@ -157,7 +158,13 @@ async function parseImageOCR(file) {
 }
 function removeFile() { selectedFile.value = null; parseStatus.value = ''; if(fileInputRef.value) fileInputRef.value.value = '' }
 
-// ── 提交处理 ──────────────────────────────────────────────
+// ── 提交与打断处理 (核心更新) ──────────────────────────────
+function cancelAnalysis() {
+  currentRequestId++ // 生成新 ID，直接作废当前等待中的请求回调
+  loading.value = false
+  showToast('已安全中断，您可以修改后重新分析', 'warn')
+}
+
 async function processInput() {
   if (loading.value) return
   if (isFileTool.value) {
@@ -171,36 +178,67 @@ async function processInput() {
 
 async function processTextInput(text) {
   loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
+  const reqId = ++currentRequestId // 记录当前请求 ID
+  
   try {
     const result = await callAI(selectedTool.value, text)
+    if (reqId !== currentRequestId) return // 如果中途被取消，直接丢弃结果不渲染
+    
     output.value = result; elapsedMs.value = Date.now() - startTime.value
     saveToHistory(selectedTool.value, text.substring(0, 50), result); loadHistory(selectedTool.value)
-  } catch (err) { error.value = err.message } finally { loading.value = false }
+  } catch (err) { 
+    if (reqId !== currentRequestId) return
+    error.value = err.message 
+  } finally { 
+    if (reqId === currentRequestId) loading.value = false 
+  }
 }
 
 async function processFileInput() {
   loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
+  const reqId = ++currentRequestId // 记录当前请求 ID
+  
   try {
     let result
     const ext = selectedFile.value.name.split('.').pop().toLowerCase()
     if (['wav', 'mp3', 'aac', 'mp4'].includes(ext)) {
       const { audioToBase64 } = await import('./utils/api.js')
       const b64 = await audioToBase64(selectedFile.value)
+      if (reqId !== currentRequestId) return
       result = await callAudioAI(selectedTool.value, b64, selectedFile.value.type || 'audio/mpeg')
     } else {
       result = await callAI(selectedTool.value, parsedText.value)
     }
+    if (reqId !== currentRequestId) return // 如果中途被取消，直接丢弃结果不渲染
+    
     output.value = result; elapsedMs.value = Date.now() - startTime.value
     saveToHistory(selectedTool.value, `[文件] ${selectedFile.value.name}`, result); loadHistory(selectedTool.value)
-  } catch (err) { error.value = err.message } finally { loading.value = false }
+  } catch (err) { 
+    if (reqId !== currentRequestId) return
+    error.value = err.message 
+  } finally { 
+    if (reqId === currentRequestId) loading.value = false 
+  }
 }
 
+// ── 历史记录方法 (补全) ──────────────────────────
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
 function clearInput() { userInput.value = ''; output.value = '' }
 function saveToHistory(t, i, r) { try { const k = `ag_${t}`; const h = JSON.parse(localStorage.getItem(k)||'[]'); h.unshift({id:Date.now(),input:i,output:r}); localStorage.setItem(k, JSON.stringify(h.slice(0,20))) } catch(e){} }
 function loadHistory(t) { try { historyList.value = JSON.parse(localStorage.getItem(`ag_${t}`)||'[]') } catch{ historyList.value = [] } }
 function loadHistoryItem(item) { userInput.value = item.input; output.value = item.output; showHistory.value = false }
 function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast('📋 已复制')) }
+function clearHistory() {
+  if (!selectedTool.value) return
+  localStorage.removeItem(`ag_${selectedTool.value}`)
+  historyList.value = []
+  showHistory.value = false
+  showToast('历史记录已清空')
+}
+function formatTime(timestamp) {
+  const d = new Date(timestamp)
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
 
 async function secureExportToPDF(password) {
   if (!password) return; isExporting.value = true; const el = document.getElementById('report-content')
@@ -223,7 +261,8 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
     <transition name="fade">
       <div v-if="toast.show" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full bg-white/80 backdrop-blur-xl border border-white shadow-xl text-sm font-medium text-slate-800 flex items-center gap-2">
         <span v-if="toast.type==='success'" class="text-green-500">✓</span>
-        <span v-else class="text-red-500">!</span>
+        <span v-else-if="toast.type==='warn'" class="text-yellow-500">!</span>
+        <span v-else class="text-red-500">✕</span>
         {{ toast.message }}
       </div>
     </transition>
@@ -282,7 +321,8 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
           </button>
 
           <div class="glass-panel p-8 md:p-10 rounded-[2rem]">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 border-b border-white/50 pb-8">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-white/50 pb-8 relative">
               <div class="flex items-center gap-5">
                 <div class="w-16 h-16 rounded-3xl bg-white shadow-sm flex items-center justify-center text-4xl border border-slate-100">{{ currentTool.icon }}</div>
                 <div>
@@ -290,7 +330,30 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
                   <p class="text-slate-500 mt-2">{{ currentTool.description }}</p>
                 </div>
               </div>
+              
+              <button @click="showHistory = !showHistory" :class="['px-5 py-2.5 rounded-full font-bold transition flex items-center gap-2 border shadow-sm', showHistory ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 hover:text-blue-600 border-slate-100']">
+                📂 历史记录 ({{ historyList.length }})
+              </button>
             </div>
+
+            <transition name="fade">
+              <div v-if="showHistory" class="mb-10 p-6 bg-white/60 backdrop-blur-xl border border-white rounded-[2rem] shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                  <h4 class="font-bold text-slate-800">最近处理历史</h4>
+                  <button v-if="historyList.length > 0" @click="clearHistory" class="text-sm text-red-500 hover:text-red-600 font-medium bg-red-50 px-3 py-1.5 rounded-full transition">清空历史</button>
+                </div>
+                <div v-if="historyList.length === 0" class="text-sm text-slate-500 py-6 text-center border-2 border-dashed border-slate-200 rounded-2xl">暂无历史记录</div>
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                  <div v-for="item in historyList" :key="item.id" @click="loadHistoryItem(item)" class="p-4 bg-white/80 rounded-2xl cursor-pointer hover:shadow-md hover:border-blue-200 border border-transparent transition group flex flex-col justify-between">
+                    <div class="text-sm text-slate-700 line-clamp-3 mb-3">{{ item.input }}</div>
+                    <div class="text-xs text-slate-400 flex items-center justify-between">
+                      <span>{{ formatTime(item.id) }}</span>
+                      <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition">载入此记录 →</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </transition>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-start">
               
@@ -325,11 +388,18 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
                   </div>
                 </div>
 
-                <div class="mt-6">
-                  <button @click="processInput" :disabled="loading || (isFileTool ? parseStatus!=='done' : !userInput)" class="btn-fluid w-full py-4 text-lg shadow-xl shadow-blue-500/20 flex justify-center items-center">
-                    <span v-if="!loading">🚀 立即执行 AI 分析</span>
-                    <span v-else class="flex items-center gap-3"><span class="loading-dots bg-white/20 px-3 py-1 rounded-full"><span></span><span></span><span></span></span> 深度运算中</span>
+                <div class="mt-6 flex gap-3">
+                  <button v-if="!loading" @click="processInput" :disabled="isFileTool ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-4 text-lg shadow-xl shadow-blue-500/20 flex justify-center items-center">
+                    🚀 立即执行 AI 分析
                   </button>
+                  <div v-else class="flex-1 flex gap-3">
+                    <button disabled class="flex-1 py-4 text-base md:text-lg bg-slate-100 text-slate-500 rounded-full cursor-not-allowed flex justify-center items-center border border-slate-200">
+                      <span class="loading-dots px-3 py-1"><span></span><span></span><span></span></span> 深度运算中
+                    </button>
+                    <button @click="cancelAnalysis" class="px-6 md:px-8 py-4 text-base md:text-lg bg-red-50 text-red-600 font-bold rounded-full hover:bg-red-100 transition shadow-sm border border-red-100 flex items-center justify-center shrink-0">
+                      ⏹ 取消
+                    </button>
+                  </div>
                 </div>
               </div>
 
