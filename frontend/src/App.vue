@@ -397,7 +397,7 @@ onUnmounted(() => {
               <div class="lg:col-span-5 flex flex-col gap-6">
                 <div class="flex justify-between items-center">
                   <h3 class="text-lg font-black text-slate-800 dark:text-white">{{ t('提供分析内容') }}</h3>
-                  <button v-if="inputMode === 'text'" @click="fillExample" class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition">{{ t('填入示例') }}</button>
+                  <button v-if="inputMode === 'text'" @click="fillExample" class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition">{{ t('示例') }}</button>
                 </div>
 
                 <div class="flex p-1.5 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-white/80 dark:border-slate-700 shadow-inner">
