@@ -295,8 +295,8 @@ export const TOOLS_CONFIG = {
   },
   finance_audit: {
     id: 'finance_audit',
-    name: '财务·智能审计',
-    icon: '💰',
+    name: 'Aegis审计',
+    icon: '财务部',
     description: '上传财务单据，AI 自动识别异常并输出风险评级',
     color: 'amber',
     inputType: 'file',
