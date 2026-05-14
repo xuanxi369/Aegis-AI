@@ -67,7 +67,7 @@ const exportDate = computed(() => {
   return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`
 })
 
-// ✨ 核心修复：强制注入响应式依赖！破解全局翻译不生效的死局！
+// 核心修复：强制注入响应式依赖，破解全局翻译死局
 const tools = computed(() => {
   const lang = currentLang.value; // 强制 Vue 收集依赖
   return Object.values(TOOLS_CONFIG).map(tool => ({
@@ -77,7 +77,6 @@ const tools = computed(() => {
   }))
 })
 
-// ✨ 核心修复：现在的 currentTool 是直接从翻译好的 tools.value 里面找，确保内部页面也会响应语言切换！
 const currentTool = computed(() => selectedTool.value ? tools.value.find(t => t.id === selectedTool.value) : null)
 
 const renderedOutput = computed(() => {
@@ -297,169 +296,168 @@ onUnmounted(() => {
     </transition>
 
     <header class="fixed top-0 w-full z-50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border-b border-white/50 dark:border-slate-800">
-      <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <div class="flex items-center gap-4 cursor-pointer group" @click="currentView = 'landing'">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:scale-110 transition">A</div>
-          <span class="text-2xl font-black tracking-tight dark:text-white">Aegis AI</span>
+      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = 'landing'">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-110 transition">A</div>
+          <span class="text-xl font-black tracking-tight dark:text-white">Aegis AI</span>
         </div>
         
-        <div class="flex items-center gap-5">
-          <button @click="toggleTheme" class="w-11 h-11 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-110 transition text-xl">
-            {{ isDark ? '🌛' : '☀️' }}
+        <div class="flex items-center gap-4">
+          <button @click="toggleTheme" class="w-9 h-9 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-110 transition text-lg">
+            {{ isDark ? '🌙' : '☀️' }}
           </button>
           
-          <select :value="currentLang" @change="changeLang" class="glass-input !py-2 !px-5 !w-auto !rounded-full !text-base font-bold cursor-pointer dark:bg-slate-800 outline-none">
-            <option value="zh-CN">简体中文</option>
-            <option value="zh-TW">繁體中文</option>
-            <option value="en">English</option>
-            <option value="ja">日本語</option>
-            <option value="ko">한국어</option>
-            <option value="de">Deutsch</option>
+          <select :value="currentLang" @change="changeLang" class="glass-input !py-1.5 !px-4 !w-auto !rounded-full !text-sm font-bold cursor-pointer dark:bg-slate-800 outline-none">
+            <option value="zh-CN">🇨🇳 简体中文</option>
+            <option value="zh-TW">🇭🇰 繁體中文</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="de">🇩🇪 Deutsch</option>
           </select>
 
-          <button v-if="currentView !== 'landing'" @click="goBackToDashboard" class="text-base font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors ml-2">
+          <button v-if="currentView !== 'landing'" @click="goBackToDashboard" class="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors ml-2">
             {{ t('返回大厅') }}
           </button>
         </div>
       </div>
     </header>
 
-    <main class="relative z-10 pt-32 pb-16 px-6 max-w-7xl mx-auto min-h-screen flex flex-col">
+    <main class="relative z-10 pt-24 pb-16 px-6 max-w-7xl mx-auto min-h-screen flex flex-col">
       <transition name="fade" mode="out-in">
         
         <div v-if="currentView === 'landing'" class="flex-1 flex flex-col items-center justify-center text-center py-20 min-h-[70vh]">
-          <div class="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/60 dark:bg-slate-800/60 border border-white dark:border-slate-700 shadow-sm text-base text-blue-600 dark:text-blue-400 font-bold mb-12 backdrop-blur-md">
-            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-            {{ t('企业效能引擎 · 共识加密算法 ') }}
+          <div class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/60 dark:bg-slate-800/60 border border-white dark:border-slate-700 shadow-sm text-sm text-blue-600 dark:text-blue-400 font-bold mb-8 backdrop-blur-md">
+            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            {{ t('全新视觉 · 企业效能引擎') }}
           </div>
           
-          <h5 class="text-6xl md:text-[7rem] font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-12">
-            {{ t('IIEAO效能中枢') }} <br/> 
-            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('智驭未来') }}</span>
-          </h5>
-          <h3 style="color: black;">面向传统企业文职人员的智能办公平台</h3>
+          <h1 class="text-5xl md:text-[5.5rem] font-black text-slate-800 dark:text-white tracking-tight leading-tight mb-8">
+            {{ t('智驭未来办公') }} <br/> 
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
+          </h1>
           
-          <button @click="currentView = 'dashboard'" class="btn-fluid text-2xl px-12 py-5 shadow-2xl shadow-blue-500/30 flex items-center gap-4 group mt-6">
-            {{ t('进入中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
+          <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
+            {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
           </button>
         </div>
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
-          <h2 class="text-4xl font-black text-slate-800 dark:text-white mb-3">{{ t('让AI处理繁琐文书') }}</h2>
-          <p class="text-lg text-slate-500 dark:text-slate-400 mb-12">{{ t('选择一个专属配置的 AI Agent 开始您的工作') }}</p>
+          <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2">{{ t('欢迎回来，探索智能模块') }}</h2>
+          <p class="text-base text-slate-500 dark:text-slate-400 mb-10">{{ t('选择一个专门配置的 AI Agent 开始您的工作') }}</p>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-10 group rounded-[2.5rem]">
-              <div class="w-16 h-16 rounded-[1.5rem] bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-4xl mb-8 border border-white dark:border-slate-700 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
+              <div class="w-14 h-14 rounded-[1.25rem] bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-3xl mb-6 border border-white dark:border-slate-700 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
               
-              <h3 class="text-2xl font-black text-slate-800 dark:text-white mb-4">{{ tool.displayName }}</h3>
-              <p class="text-base text-slate-500 dark:text-slate-400 leading-relaxed mb-8 h-12">{{ tool.displayDesc }}</p>
+              <h3 class="text-xl font-black text-slate-800 dark:text-white mb-3">{{ tool.displayName }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10 overflow-hidden">{{ tool.displayDesc }}</p>
               
-              <div class="flex justify-between items-center text-base font-bold">
+              <div class="flex justify-between items-center text-sm font-bold">
                 <span class="text-blue-500 group-hover:text-pink-500 transition-colors">{{ t('开始使用') }} ↗</span>
-                <span class="px-4 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
+                <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div v-else-if="currentView === 'tool'">
-          <div class="glass-panel p-10 md:p-14 rounded-[3.5rem]">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-slate-200 dark:border-slate-800 pb-10 gap-6">
-              <div class="flex items-center gap-6">
-                <div class="text-5xl p-5 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700">{{ currentTool.icon }}</div>
+          <div class="glass-panel p-8 md:p-10 rounded-[2.5rem]">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-slate-200 dark:border-slate-800 pb-8 gap-6">
+              <div class="flex items-center gap-5">
+                <div class="text-4xl p-4 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-700">{{ currentTool.icon }}</div>
                 <div>
-                  <h2 class="text-4xl font-black text-slate-800 dark:text-white leading-tight">{{ currentTool.displayName }}</h2>
-                  <p class="text-lg text-slate-500 mt-2">{{ currentTool.displayDesc }}</p>
+                  <h2 class="text-3xl font-black text-slate-800 dark:text-white leading-tight">{{ currentTool.displayName }}</h2>
+                  <p class="text-base text-slate-500 mt-2">{{ currentTool.displayDesc }}</p>
                 </div>
               </div>
-              <button @click="showHistory = !showHistory" class="px-8 py-3 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-full font-black text-base shadow-sm border border-blue-100 dark:border-slate-700 transition hover:bg-blue-100">
+              <button @click="showHistory = !showHistory" class="px-6 py-2.5 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-full font-bold text-sm shadow-sm border border-blue-100 dark:border-slate-700 transition hover:bg-blue-100">
                 {{ t('📂 历史记录') }} ({{ historyList.length }})
               </button>
             </div>
 
             <transition name="fade">
-              <div v-if="showHistory" class="mb-12 p-8 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2.5rem] shadow-2xl">
-                <div class="flex justify-between items-center mb-6">
-                  <h4 class="text-xl font-black text-slate-800 dark:text-white">{{ t('最近处理历史') }}</h4>
-                  <button v-if="historyList.length > 0" @click="clearHistory" class="text-sm text-red-500 font-bold bg-red-50 dark:bg-red-900/30 px-5 py-2 rounded-full transition">{{ t('清空历史') }}</button>
+              <div v-if="showHistory" class="mb-10 p-6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] shadow-xl">
+                <div class="flex justify-between items-center mb-5">
+                  <h4 class="text-lg font-black text-slate-800 dark:text-white">{{ t('最近处理历史') }}</h4>
+                  <button v-if="historyList.length > 0" @click="clearHistory" class="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/30 px-4 py-1.5 rounded-full transition">{{ t('清空历史') }}</button>
                 </div>
-                <div v-if="historyList.length === 0" class="py-10 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl text-slate-400">{{ t('暂无历史记录') }}</div>
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                  <div v-for="h in historyList" :key="h.id" @click="loadHistoryItem(h)" class="p-6 hover:bg-white dark:hover:bg-slate-700 cursor-pointer rounded-[1.5rem] border border-slate-100 dark:border-slate-600 transition-all duration-300 group">
-                    <div class="text-base text-slate-700 dark:text-slate-300 line-clamp-3 mb-4">{{ h.input }}</div>
-                    <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition font-black text-sm">{{ t('载入此记录 →') }}</span>
+                <div v-if="historyList.length === 0" class="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 text-sm">{{ t('暂无历史记录') }}</div>
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div v-for="h in historyList" :key="h.id" @click="loadHistoryItem(h)" class="p-5 hover:bg-white dark:hover:bg-slate-700 cursor-pointer rounded-2xl border border-slate-100 dark:border-slate-600 transition-all duration-300 group">
+                    <div class="text-sm text-slate-700 dark:text-slate-300 line-clamp-3 mb-3">{{ h.input }}</div>
+                    <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition font-bold text-xs">{{ t('载入此记录 →') }}</span>
                   </div>
                 </div>
               </div>
             </transition>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-              <div class="lg:col-span-5 flex flex-col gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+              <div class="lg:col-span-5 flex flex-col gap-6">
                 <div class="flex justify-between items-center">
-                  <h3 class="text-2xl font-black text-slate-800 dark:text-white">{{ t('提供分析内容') }}</h3>
-                  <button v-if="inputMode === 'text'" @click="fillExample" class="text-sm font-bold px-4 py-2 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition">{{ t('填入示例') }}</button>
+                  <h3 class="text-lg font-black text-slate-800 dark:text-white">{{ t('提供分析内容') }}</h3>
+                  <button v-if="inputMode === 'text'" @click="fillExample" class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition">{{ t('填入示例') }}</button>
                 </div>
 
-                <div class="flex p-2 bg-white/50 dark:bg-slate-800/50 rounded-[1.5rem] border border-white/80 dark:border-slate-700 shadow-inner">
-                  <button @click="inputMode='text'" :class="['flex-1 py-4 rounded-2xl font-black transition text-base flex items-center justify-center gap-3', inputMode==='text'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-lg border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('📝 文本段落描述') }}</button>
-                  <button @click="inputMode='file'" :class="['flex-1 py-4 rounded-2xl font-black transition text-base flex items-center justify-center gap-3', inputMode==='file'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-lg border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('📄 完整文件解析') }}</button>
+                <div class="flex p-1.5 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-white/80 dark:border-slate-700 shadow-inner">
+                  <button @click="inputMode='text'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='text'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('📝 文本段落描述') }}</button>
+                  <button @click="inputMode='file'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='file'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('📄 完整文件解析') }}</button>
                 </div>
 
-                <textarea v-if="inputMode==='text'" v-model="userInput" :placeholder="t(currentTool.placeholder) || t('在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[350px] !text-lg !rounded-[2rem] resize-none"></textarea>
+                <textarea v-if="inputMode==='text'" v-model="userInput" :placeholder="t(currentTool.placeholder) || t('在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[300px] !text-base !rounded-2xl resize-none"></textarea>
                 
                 <div v-else class="flex flex-col">
-                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone min-h-[350px] flex flex-col items-center justify-center !rounded-[2rem] transition-all duration-500', isDragOver&&'file-drop-active']">
+                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone min-h-[300px] flex flex-col items-center justify-center !rounded-[1.5rem] transition-all duration-500', isDragOver&&'file-drop-active']">
                     <input ref="fileInputRef" type="file" @change="onFileSelect" class="hidden" />
-                    <div class="text-5xl mb-6 bg-white dark:bg-slate-800 w-20 h-20 rounded-full flex items-center justify-center shadow-md">📤</div>
-                    <p class="text-xl font-black dark:text-slate-200 mb-2">{{ t('点击或拖拽上传文件') }}</p>
-                    <p class="text-base text-slate-500">{{ t(currentTool.acceptHint) || t('支持 PDF, Word, TXT 等格式文本提取') }}</p>
+                    <div class="text-4xl mb-4 bg-white dark:bg-slate-800 w-16 h-16 rounded-full flex items-center justify-center shadow-sm">📤</div>
+                    <p class="text-lg font-bold dark:text-slate-200 mb-2">{{ t('点击或拖拽上传文件') }}</p>
+                    <p class="text-sm text-slate-500">{{ t(currentTool.acceptHint) || t('支持 PDF, Word, TXT 等格式文本提取') }}</p>
                   </div>
-                  <div v-else class="bg-white/60 dark:bg-slate-800/60 p-10 rounded-[2.5rem] border border-white dark:border-slate-700 shadow-sm min-h-[350px] flex flex-col justify-center text-center">
-                    <div class="text-5xl mb-6">📄</div>
-                    <p class="text-xl font-black text-slate-800 dark:text-white mb-2">{{ selectedFile.name }}</p>
-                    <p class="text-sm text-slate-500 mb-8">{{ (selectedFile.size/1024).toFixed(1) }} KB</p>
-                    <button @click="removeFile" class="self-center px-8 py-2 rounded-full bg-red-50 dark:bg-red-900/30 text-red-500 font-bold hover:bg-red-100">✕ 移除文件</button>
+                  <div v-else class="bg-white/60 dark:bg-slate-800/60 p-8 rounded-[1.5rem] border border-white dark:border-slate-700 shadow-sm min-h-[300px] flex flex-col justify-center text-center">
+                    <div class="text-4xl mb-4">📄</div>
+                    <p class="text-lg font-bold text-slate-800 dark:text-white mb-2 truncate px-4">{{ selectedFile.name }}</p>
+                    <p class="text-xs text-slate-500 mb-6">{{ (selectedFile.size/1024).toFixed(1) }} KB</p>
+                    <button @click="removeFile" class="self-center px-6 py-1.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-500 font-bold text-sm hover:bg-red-100">✕ 移除文件</button>
                   </div>
                 </div>
 
-                <div class="flex gap-4">
-                  <button v-if="!loading" @click="processInput" :disabled="inputMode === 'file' ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-5 text-xl font-black">
-                    {{ t('立即执行 AI 分析') }}
+                <div class="flex gap-3">
+                  <button v-if="!loading" @click="processInput" :disabled="inputMode === 'file' ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-4 text-lg font-bold">
+                    {{ t('🚀 立即执行 AI 分析') }}
                   </button>
-                  <div v-else class="flex-1 flex gap-4">
-                    <button disabled class="flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex justify-center items-center text-xl font-black border border-slate-200 dark:border-slate-700">
-                      <span class="loading-dots px-4"><span></span><span></span><span></span></span> {{ t('深度运算中') }}
+                  <div v-else class="flex-1 flex gap-3">
+                    <button disabled class="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex justify-center items-center text-lg font-bold border border-slate-200 dark:border-slate-700">
+                      <span class="loading-dots px-3"><span></span><span></span><span></span></span> {{ t('深度运算中') }}
                     </button>
-                    <button @click="cancelAnalysis" class="px-10 py-5 bg-red-50 dark:bg-red-900/30 text-red-600 font-black rounded-full hover:bg-red-100 transition shadow-sm border border-red-100">
-                      {{ t('取消') }}
+                    <button @click="cancelAnalysis" class="px-8 py-4 bg-red-50 dark:bg-red-900/30 text-red-600 font-bold rounded-full hover:bg-red-100 transition shadow-sm border border-red-100 dark:border-red-900/50">
+                      {{ t('⏹ 取消') }}
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div class="lg:col-span-7 bg-white/40 dark:bg-slate-900/50 rounded-[3rem] p-10 shadow-inner min-h-[600px] max-h-[750px] flex flex-col relative border border-white/80 dark:border-slate-800">
-                <div class="flex justify-between items-center mb-8">
-                  <h3 class="text-2xl font-black text-slate-800 dark:text-white">{{ t('输出结果') }}</h3>
-                  <div v-if="output && !loading" class="flex gap-3">
-                    <button @click="isOutputExpanded = true" class="px-6 py-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-full text-base font-black text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-slate-700">{{ t('⤢ 展开') }}</button>
-                    <button @click="copyOutput" class="px-6 py-2.5 bg-white dark:bg-slate-800 rounded-full text-base font-bold border border-slate-100 dark:border-slate-700 shadow-sm">{{ t('复制') }}</button>
-                    <button @click="showPasswordModal = true" class="px-6 py-2.5 bg-blue-600 rounded-full text-base font-bold text-white shadow-xl">{{ t('导出 PDF') }}</button>
+              <div class="lg:col-span-7 bg-white/40 dark:bg-slate-900/50 rounded-[2rem] p-8 shadow-inner min-h-[500px] max-h-[650px] flex flex-col relative border border-white/80 dark:border-slate-800">
+                <div class="flex justify-between items-center mb-6">
+                  <h3 class="text-lg font-black text-slate-800 dark:text-white">{{ t('输出结果') }}</h3>
+                  <div v-if="output && !loading" class="flex gap-2">
+                    <button @click="isOutputExpanded = true" class="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-full text-sm font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-slate-700">{{ t('⤢ 展开') }}</button>
+                    <button @click="copyOutput" class="px-4 py-2 bg-white dark:bg-slate-800 rounded-full text-sm font-bold border border-slate-100 dark:border-slate-700 shadow-sm dark:text-white">{{ t('复制') }}</button>
+                    <button @click="showPasswordModal = true" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-bold text-white shadow-md">{{ t('导出 PDF') }}</button>
                   </div>
                 </div>
 
                 <div v-if="!output && !loading" class="flex-1 flex flex-col items-center justify-center text-center">
-                  <div class="w-24 h-24 bg-blue-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center text-4xl mb-8 animate-pulse border border-blue-100 dark:border-slate-700 shadow-inner">✨</div>
-                  <h4 class="text-2xl font-black mb-3 dark:text-white">{{ t('等待指令中') }}</h4>
-                  <p class="text-lg text-slate-500 dark:text-slate-400 max-w-sm">{{ t('请在左侧提供内容，AI 助手已准备就绪') }}</p>
+                  <div class="w-20 h-20 bg-blue-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center text-3xl mb-6 animate-pulse border border-blue-100 dark:border-slate-700 shadow-inner">✨</div>
+                  <h4 class="text-xl font-bold mb-2 dark:text-white">{{ t('等待指令中') }}</h4>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs">{{ t('请在左侧提供内容，AI 助手已准备就绪') }}</p>
                 </div>
                 
                 <div v-else-if="loading" class="flex-1 flex flex-col items-center justify-center">
-                  <div class="w-16 h-16 border-8 border-blue-100 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
-                  <p class="mt-6 text-xl font-black text-blue-500">{{ t('深度运算中') }}</p>
+                  <div class="w-14 h-14 border-[6px] border-blue-100 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
+                  <p class="mt-5 text-lg font-bold text-blue-500">{{ t('深度运算中') }}</p>
                 </div>
 
-                <div v-else class="flex-1 overflow-y-auto markdown-output custom-scrollbar pr-4 text-lg" v-html="renderedOutput"></div>
+                <div v-else class="flex-1 overflow-y-auto markdown-output custom-scrollbar pr-3 text-base" v-html="renderedOutput"></div>
               </div>
             </div>
           </div>
@@ -468,14 +466,16 @@ onUnmounted(() => {
     </main>
 
     <transition name="fade">
-      <div v-if="isOutputExpanded" class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-8 md:p-16">
-        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-6xl h-full rounded-[3.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
-          <div class="px-10 py-8 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-            <h3 class="text-2xl font-black text-slate-800 dark:text-white">{{ t('沉浸式阅读') }}</h3>
-            <button @click="isOutputExpanded = false" class="px-8 py-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full font-black text-lg">{{ t('⤡ 收回') }}</button>
+      <div v-if="isOutputExpanded" class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-6 md:p-12">
+        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-5xl h-full rounded-[2.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
+          <div class="px-8 py-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">✨</span><h3 class="text-xl font-black text-slate-800 dark:text-white">{{ t('沉浸式阅读') }}</h3>
+            </div>
+            <button @click="isOutputExpanded = false" class="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full font-bold text-sm">{{ t('⤡ 收回') }}</button>
           </div>
-          <div class="p-12 overflow-y-auto custom-scrollbar flex-1">
-            <div class="markdown-output max-w-4xl mx-auto text-xl" v-html="renderedOutput"></div>
+          <div class="p-10 overflow-y-auto custom-scrollbar flex-1">
+            <div class="markdown-output max-w-4xl mx-auto text-base" v-html="renderedOutput"></div>
           </div>
         </div>
       </div>
@@ -483,14 +483,14 @@ onUnmounted(() => {
 
     <transition name="fade">
       <div v-if="showPasswordModal" class="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4">
-        <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl p-10 rounded-[2.5rem] border border-white dark:border-slate-700 shadow-2xl w-full max-w-md text-center">
-          <div class="w-20 h-20 bg-blue-50 dark:bg-slate-900 text-blue-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6">🔒</div>
-          <h3 class="text-2xl font-black text-slate-800 dark:text-white mb-3">{{ t('安全导出设定') }}</h3>
-          <p class="text-base text-slate-500 mb-8">为保护企业敏感数据，请设置查看密码</p>
-          <input v-model="pdfPassword" type="password" placeholder="输入文档密码" class="glass-input mb-8 bg-slate-50 dark:bg-slate-900 focus:bg-white !text-lg !rounded-2xl" autofocus />
-          <div class="flex gap-4">
-            <button @click="showPasswordModal = false" class="flex-1 py-4 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-lg">{{ t('取消') }}</button>
-            <button @click="secureExportToPDF(pdfPassword)" :disabled="isExporting" class="flex-1 py-4 rounded-full bg-blue-600 text-white font-bold text-lg shadow-lg shadow-blue-500/30">
+        <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl p-8 rounded-[2rem] border border-white dark:border-slate-700 shadow-2xl w-full max-w-md text-center">
+          <div class="w-16 h-16 bg-blue-50 dark:bg-slate-900 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5">🔒</div>
+          <h3 class="text-xl font-black text-slate-800 dark:text-white mb-2">{{ t('安全导出设定') }}</h3>
+          <p class="text-sm text-slate-500 mb-6">为保护企业敏感数据，请设置查看密码</p>
+          <input v-model="pdfPassword" type="password" placeholder="输入文档密码" class="glass-input mb-6 bg-slate-50 dark:bg-slate-900 focus:bg-white !text-base !rounded-xl" autofocus />
+          <div class="flex gap-3">
+            <button @click="showPasswordModal = false" class="flex-1 py-3 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-base">{{ t('取消') }}</button>
+            <button @click="secureExportToPDF(pdfPassword)" :disabled="isExporting" class="flex-1 py-3 rounded-full bg-blue-600 text-white font-bold text-base shadow-lg shadow-blue-500/30">
               {{ isExporting ? t('深度运算中') : t('确认下载') }}
             </button>
           </div>
