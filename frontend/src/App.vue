@@ -305,7 +305,7 @@ onUnmounted(() => {
         
         <div class="flex items-center gap-5">
           <button @click="toggleTheme" class="w-11 h-11 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-110 transition text-xl">
-            {{ isDark ? '月' : '日' }}
+            {{ isDark ? '夜晚' : '白日' }}
           </button>
           
           <select :value="currentLang" @change="changeLang" class="glass-input !py-2 !px-5 !w-auto !rounded-full !text-base font-bold cursor-pointer dark:bg-slate-800 outline-none">
@@ -333,14 +333,14 @@ onUnmounted(() => {
             {{ t('企业效能引擎 · 共识加密算法 ') }}
           </div>
           
-          <h1 class="text-6xl md:text-[7rem] font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-12">
+          <h4 class="text-6xl md:text-[7rem] font-black text-slate-800 dark:text-white tracking-tighter leading-none mb-12">
             {{ t('IIEAO 效能中枢') }} <br/> 
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('落地现实，智驭未来') }}</span>
-             <h3 style="color: black;">面向传统企业文职人员的智能办公平台</h3>
-          </h1>
+          </h4>
+          <h2 style="color: black;">面向传统企业文职人员的智能办公平台</h3>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-2xl px-12 py-5 shadow-2xl shadow-blue-500/30 flex items-center gap-4 group mt-6">
-            {{ t('键入中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
+            {{ t('进入中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
           </button>
         </div>
 
