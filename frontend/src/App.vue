@@ -7,9 +7,12 @@ import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js
 
 marked.setOptions({ breaks: true, gfm: true })
 
-// ── 核心视图状态 (三级流转核心) ─────────────────────────
-const currentView = ref('landing') // 'landing' | 'dashboard' | 'tool'
+// ── 核心视图状态 ─────────────────────────
+const currentView = ref('landing')
 const selectedTool = ref(null)
+
+// ── 展开全屏状态 (新增) ─────────────────────────
+const isOutputExpanded = ref(false)
 
 // ── 工作区状态 ──────────────────────────────────────────────
 const loading = ref(false)
@@ -68,6 +71,7 @@ function enterApp() { currentView.value = 'dashboard' }
 function goBackToDashboard() {
   currentView.value = 'dashboard'
   selectedTool.value = null
+  isOutputExpanded.value = false // 退出时重置全屏状态
   resetWorkspace()
 }
 function openTool(toolId) {
@@ -78,7 +82,7 @@ function openTool(toolId) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// ── 财务 JSON 渲染 (适配亮色模式) ──────────────────────────
+// ── 财务 JSON 渲染 ──────────────────────────
 function renderFinanceJSON(json) {
   const score = json.risk_score ?? 0
   const scoreColor = score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : '#EF4444'
@@ -111,7 +115,7 @@ function resetWorkspace() {
   showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0
 }
 
-// ── 文件处理逻辑 (完全保留原逻辑) ──────────────────────────
+// ── 文件处理逻辑 ──────────────────────────
 function onFileSelect(e) { const f = e.target.files?.[0]; if (f) handleFile(f) }
 function onDrop(e) { e.preventDefault(); isDragOver.value = false; const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }
 function onDragOver(e) { e.preventDefault(); isDragOver.value = true }
@@ -191,7 +195,6 @@ async function processFileInput() {
   } catch (err) { error.value = err.message } finally { loading.value = false }
 }
 
-// ── 历史记录与工具配置 ────────────────────────────────────
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
 function clearInput() { userInput.value = ''; output.value = '' }
 function saveToHistory(t, i, r) { try { const k = `ag_${t}`; const h = JSON.parse(localStorage.getItem(k)||'[]'); h.unshift({id:Date.now(),input:i,output:r}); localStorage.setItem(k, JSON.stringify(h.slice(0,20))) } catch(e){} }
@@ -261,13 +264,13 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
           <p class="text-slate-500 mb-10">选择一个专门配置的 AI Agent 开始您的工作</p>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group">
+            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
               <div class="w-14 h-14 rounded-2xl bg-white/80 shadow-sm flex items-center justify-center text-3xl mb-6 border border-white group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
               <h3 class="text-xl font-bold text-slate-800 mb-3">{{ tool.name }}</h3>
               <p class="text-sm text-slate-500 leading-relaxed mb-6 h-10">{{ tool.description }}</p>
               <div class="flex justify-between items-center text-sm font-medium">
                 <span class="text-blue-500 group-hover:text-pink-500 transition-colors">开始使用 ↗</span>
-                <span v-if="tool.inputType==='file'" class="px-3 py-1 bg-slate-100 rounded-full text-xs text-slate-500">支持文件解析</span>
+                <span v-if="tool.inputType==='file'" class="px-3 py-1 bg-slate-100 rounded-full text-xs text-slate-500">支持文件</span>
               </div>
             </div>
           </div>
@@ -278,7 +281,7 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
             <span class="text-xl">←</span> 返回大厅
           </button>
 
-          <div class="glass-panel p-8 md:p-10">
+          <div class="glass-panel p-8 md:p-10 rounded-[2rem]">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 border-b border-white/50 pb-8">
               <div class="flex items-center gap-5">
                 <div class="w-16 h-16 rounded-3xl bg-white shadow-sm flex items-center justify-center text-4xl border border-slate-100">{{ currentTool.icon }}</div>
@@ -289,26 +292,26 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
               </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-start">
               
-              <div class="lg:col-span-5 flex flex-col h-full">
+              <div class="lg:col-span-5 flex flex-col">
                 <h3 class="text-lg font-bold text-slate-800 mb-4 flex justify-between items-center">
                   提供分析内容
                   <button v-if="!isFileTool" @click="fillExample" class="text-xs font-medium px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition">填入示例</button>
                 </h3>
 
-                <div v-if="!isFileTool" class="flex-1 flex flex-col">
-                  <textarea v-model="userInput" :placeholder="currentTool.placeholder" class="glass-input flex-1 min-h-[300px] resize-none"></textarea>
+                <div v-if="!isFileTool" class="flex flex-col">
+                  <textarea v-model="userInput" :placeholder="currentTool.placeholder" class="glass-input min-h-[300px] resize-none"></textarea>
                 </div>
 
-                <div v-if="isFileTool" class="flex-1">
-                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone h-full flex flex-col items-center justify-center min-h-[300px]', isDragOver&&'file-drop-active']">
+                <div v-if="isFileTool" class="flex flex-col">
+                  <div v-if="!selectedFile" @click="fileInputRef?.click()" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave" :class="['file-drop-zone flex flex-col items-center justify-center min-h-[300px]', isDragOver&&'file-drop-active']">
                     <input ref="fileInputRef" type="file" :accept="currentTool.accept" @change="onFileSelect" class="hidden" />
                     <div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center text-2xl mb-4 text-blue-500">📤</div>
                     <p class="font-bold text-slate-700 mb-2">点击或拖拽上传文件</p>
                     <p class="text-xs text-slate-500">{{ currentTool.acceptHint }}</p>
                   </div>
-                  <div v-else class="bg-white/60 p-6 rounded-3xl border border-white shadow-sm">
+                  <div v-else class="bg-white/60 p-6 rounded-[2rem] border border-white shadow-sm">
                     <div class="flex items-center gap-4 mb-4">
                       <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-xl">📄</div>
                       <div class="flex-1 min-w-0">
@@ -318,7 +321,7 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
                       <button @click="removeFile" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex justify-center items-center">✕</button>
                     </div>
                     <div v-if="parseStatus === 'parsing'" class="text-sm text-blue-600 flex items-center gap-2"><span class="loading-dots"><span></span><span></span><span></span></span> 解析中...</div>
-                    <div v-if="parseStatus === 'done'" class="text-sm text-green-600 font-medium">✓ 文件内容已提取，等待分析</div>
+                    <div v-if="parseStatus === 'done'" class="text-sm text-green-600 font-medium">✓ 文件就绪</div>
                   </div>
                 </div>
 
@@ -330,12 +333,13 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
                 </div>
               </div>
 
-              <div class="lg:col-span-7 bg-white/40 rounded-[2.5rem] border border-white/80 p-8 shadow-inner min-h-[400px] flex flex-col relative overflow-hidden">
+              <div class="lg:col-span-7 bg-white/40 rounded-[2.5rem] border border-white/80 p-8 shadow-inner min-h-[450px] max-h-[600px] flex flex-col relative overflow-hidden">
                 <div class="flex justify-between items-center mb-6">
                   <h3 class="text-lg font-bold text-slate-800">输出结果</h3>
                   <div v-if="output && !loading" class="flex gap-2">
+                    <button @click="isOutputExpanded = true" class="px-4 py-2 bg-blue-50 rounded-full text-sm font-bold text-blue-600 hover:bg-blue-100 transition shadow-sm border border-blue-100">⤢ 展开</button>
                     <button @click="copyOutput" class="px-4 py-2 bg-white rounded-full text-sm font-medium text-slate-600 hover:text-blue-600 shadow-sm border border-slate-100 transition">复制</button>
-                    <button @click="showPasswordModal = true" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-medium text-white shadow-md hover:bg-blue-700 transition">导出安全 PDF</button>
+                    <button @click="showPasswordModal = true" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-medium text-white shadow-md hover:bg-blue-700 transition">导出 PDF</button>
                   </div>
                 </div>
 
@@ -360,7 +364,26 @@ onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.met
     </main>
 
     <transition name="fade">
-      <div v-if="showPasswordModal" class="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex justify-center items-center p-4">
+      <div v-if="isOutputExpanded" class="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-md flex justify-center items-center p-6 md:p-12">
+        <div class="bg-white/95 backdrop-blur-3xl w-full max-w-5xl h-full max-h-[85vh] rounded-[2.5rem] shadow-2xl flex flex-col relative overflow-hidden border border-white">
+          <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white/50 sticky top-0 z-10">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">✨</span>
+              <h3 class="text-xl font-bold text-slate-800">沉浸式阅读</h3>
+            </div>
+            <button @click="isOutputExpanded = false" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold transition flex items-center gap-2">
+              ⤡ 收回
+            </button>
+          </div>
+          <div class="p-8 md:p-12 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/30">
+            <div class="markdown-output max-w-4xl mx-auto" v-html="renderedOutput"></div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <transition name="fade">
+      <div v-if="showPasswordModal" class="fixed inset-0 z-[300] bg-slate-900/40 backdrop-blur-sm flex justify-center items-center p-4">
         <div class="bg-white/90 backdrop-blur-3xl p-8 rounded-[2rem] border border-white shadow-2xl w-full max-w-md text-center transform transition-all">
           <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🔒</div>
           <h3 class="text-xl font-bold text-slate-800 mb-2">安全导出设定</h3>
