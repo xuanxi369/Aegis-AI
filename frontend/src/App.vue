@@ -401,8 +401,8 @@ onUnmounted(() => {
                 </div>
 
                 <div class="flex p-1.5 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-white/80 dark:border-slate-700 shadow-inner">
-                  <button @click="inputMode='text'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='text'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('📝 文本段落描述') }}</button>
-                  <button @click="inputMode='file'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='file'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('📄 完整文件解析') }}</button>
+                  <button @click="inputMode='text'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='text'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('段落描述分析') }}</button>
+                  <button @click="inputMode='file'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='file'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('上传文件解析') }}</button>
                 </div>
 
                 <textarea v-if="inputMode==='text'" v-model="userInput" :placeholder="t(currentTool.placeholder) || t('在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[300px] !text-base !rounded-2xl resize-none"></textarea>
