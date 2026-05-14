@@ -67,7 +67,17 @@ const exportDate = computed(() => {
   return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`
 })
 
-const tools = computed(() => Object.values(TOOLS_CONFIG))
+// ✨ 核心修复：强制注入响应式依赖！
+// 当 currentLang 改变时，强制重新计算每个 tool 的显示名称和描述，破解全局翻译不生效的死局！
+const tools = computed(() => {
+  const lang = currentLang.value; // 强制 Vue 收集依赖
+  return Object.values(TOOLS_CONFIG).map(tool => ({
+    ...tool,
+    displayName: t(tool.name),
+    displayDesc: t(tool.description)
+  }))
+})
+
 const currentTool = computed(() => selectedTool.value ? TOOLS_CONFIG[selectedTool.value] : null)
 const renderedOutput = computed(() => {
   if (!output.value) return ''
@@ -190,7 +200,6 @@ async function processInput() {
 async function processTextInput(text) {
   loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
   const reqId = ++currentRequestId 
-  
   try {
     const result = await callAI(selectedTool.value, text)
     if (reqId !== currentRequestId) return 
@@ -207,7 +216,6 @@ async function processTextInput(text) {
 async function processFileInput() {
   loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
   const reqId = ++currentRequestId 
-  
   try {
     let result
     const ext = selectedFile.value.name.split('.').pop().toLowerCase()
@@ -230,7 +238,6 @@ async function processFileInput() {
   }
 }
 
-// ── 历史记录与其他工具 ──────────────────────────
 function goBackToDashboard() {
   currentView.value = 'dashboard'
   selectedTool.value = null
@@ -296,7 +303,7 @@ onUnmounted(() => {
         </div>
         
         <div class="flex items-center gap-4">
-          <button @click="toggleTheme" class="w-10 h-10 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 transition">
+          <button @click="toggleTheme" class="w-10 h-10 rounded-full bg-white/60 dark:bg-slate-800 border dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 transition">
             {{ isDark ? '🌙' : '☀️' }}
           </button>
           
@@ -317,14 +324,22 @@ onUnmounted(() => {
     </header>
 
     <main class="relative z-10 pt-24 pb-16 px-6 max-w-7xl mx-auto">
+      
       <transition name="fade" mode="out-in">
-        <div v-if="currentView === 'landing'" class="flex flex-col items-center py-20 text-center">
+        <div v-if="currentView === 'landing'" class="flex flex-col items-center justify-center text-center py-20 min-h-[70vh]">
           <div class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/60 dark:bg-slate-800/60 border border-white dark:border-slate-700 shadow-sm text-sm text-blue-600 dark:text-blue-400 font-medium mb-8 backdrop-blur-md">
             <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
             {{ t('全新视觉 · 企业效能引擎') }}
           </div>
-          <h1 class="text-5xl md:text-7xl font-extrabold mb-8 dark:text-white">{{ t('智驭未来办公') }} <br/> <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span></h1>
-          <button @click="currentView = 'dashboard'" class="btn-fluid px-10 py-4 text-xl">{{ t('进入功能中枢') }} <span>→</span></button>
+          
+          <h1 class="text-5xl md:text-7xl font-extrabold text-slate-800 dark:text-white tracking-tight leading-tight mb-8">
+            {{ t('智驭未来办公') }} <br/>
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
+          </h1>
+          
+          <button @click="currentView = 'dashboard'" class="btn-fluid px-10 py-4 text-xl shadow-xl shadow-blue-500/20 flex items-center gap-3">
+            {{ t('进入功能中枢') }} <span>→</span>
+          </button>
         </div>
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
@@ -332,10 +347,11 @@ onUnmounted(() => {
           <p class="text-slate-500 dark:text-slate-400 mb-10">{{ t('选择一个专门配置的 AI Agent 开始您的工作') }}</p>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
+            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2.5rem]">
               <div class="w-14 h-14 rounded-2xl bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-3xl mb-6 border border-white dark:border-slate-700 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
-              <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-3">{{ t(tool.name) }}</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10">{{ t(tool.description) }}</p>
+              
+              <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-3">{{ tool.displayName }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10">{{ tool.displayDesc }}</p>
               
               <div class="flex justify-between items-center text-sm font-medium">
                 <span class="text-blue-500 group-hover:text-pink-500 transition-colors">{{ t('开始使用') }} ↗</span>
@@ -351,7 +367,7 @@ onUnmounted(() => {
               <div class="flex items-center gap-4">
                 <div class="text-4xl p-4 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">{{ currentTool.icon }}</div>
                 <div>
-                  <h2 class="text-3xl font-black dark:text-white">{{ t(currentTool.name) }}</h2>
+                  <h2 class="text-3xl font-black text-slate-800 dark:text-white">{{ t(currentTool.name) }}</h2>
                   <p class="text-slate-500 mt-2">{{ t(currentTool.description) }}</p>
                 </div>
               </div>
@@ -406,7 +422,7 @@ onUnmounted(() => {
                       </div>
                       <button @click="removeFile" class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/30 text-red-500 hover:bg-red-100 flex justify-center items-center">✕</button>
                     </div>
-                    <div v-if="parseStatus === 'parsing'" class="text-sm text-blue-600 flex items-center gap-2"><span class="loading-dots"><span></span><span></span><span></span></span> 核心引擎解析中...</div>
+                    <div v-if="parseStatus === 'parsing'" class="text-sm text-blue-600 flex items-center gap-2"><span class="loading-dots"><span></span><span></span><span></span></span> 解析中...</div>
                     <div v-if="parseStatus === 'done'" class="text-sm text-green-600 font-bold bg-green-50 dark:bg-green-900/30 px-4 py-2 rounded-xl w-max">{{ t('✅ 解析完成') }}</div>
                   </div>
                 </div>
