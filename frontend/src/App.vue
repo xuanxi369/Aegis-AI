@@ -305,7 +305,7 @@ onUnmounted(() => {
         
         <div class="flex items-center gap-5">
           <button @click="toggleTheme" class="w-11 h-11 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-110 transition text-xl">
-            {{ isDark ? '夜晚' : '白日' }}
+            {{ isDark ? '🌛' : '☀️' }}
           </button>
           
           <select :value="currentLang" @change="changeLang" class="glass-input !py-2 !px-5 !w-auto !rounded-full !text-base font-bold cursor-pointer dark:bg-slate-800 outline-none">
@@ -345,7 +345,7 @@ onUnmounted(() => {
         </div>
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
-          <h2 class="text-4xl font-black text-slate-800 dark:text-white mb-3">{{ t('让AI处理繁琐文书·让效率指数级提升') }}</h2>
+          <h2 class="text-4xl font-black text-slate-800 dark:text-white mb-3">{{ t('让AI处理繁琐文书') }}</h2>
           <p class="text-lg text-slate-500 dark:text-slate-400 mb-12">{{ t('选择一个专属配置的 AI Agent 开始您的工作') }}</p>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
