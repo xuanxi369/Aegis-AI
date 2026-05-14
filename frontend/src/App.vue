@@ -26,6 +26,11 @@ function toggleTheme() {
   }
 }
 
+// ⚠️ 核心修复：解除 Vue3 直接修改导入模块导致的响应式死锁
+function changeLang(event) {
+  currentLang.value = event.target.value
+}
+
 const targetX = ref(0), targetY = ref(0), currentX = ref(0), currentY = ref(0)
 let animationFrameId = null
 
@@ -94,14 +99,14 @@ function onDragLeave() { isDragOver.value = false }
 
 function handleFile(file) {
   const limit = 20 * 1024 * 1024
-  if (file.size > limit) return showToast(`⚠️ 文件过大`, 'warn')
+  if (file.size > limit) return showToast(t('⚠️ 文件过大'), 'warn')
   selectedFile.value = file; parsedText.value = ''; parseStatus.value = 'parsing'
   autoParseFile(file).then(res => {
     parsedText.value = res.text || ''; parseStatus.value = 'done'
-    showToast(`✅ 解析完成`)
+    showToast(t('✅ 解析完成'))
   }).catch(err => {
     parseStatus.value = 'error'; error.value = err.message
-    showToast(`❌ 解析失败`, 'error')
+    showToast(t('❌ 解析失败'), 'error')
   })
 }
 function removeFile() { selectedFile.value = null; parseStatus.value = ''; if(fileInputRef.value) fileInputRef.value.value = '' }
@@ -115,10 +120,10 @@ function cancelAnalysis() {
 async function processInput() {
   if (loading.value) return
   if (inputMode.value === 'file') {
-    if (!selectedFile.value || parseStatus.value !== 'done') return showToast('⚠️ 请先上传', 'warn')
+    if (!selectedFile.value || parseStatus.value !== 'done') return showToast(t('⚠️ 请先上传'), 'warn')
     return await processFileInput()
   } else {
-    if (userInput.value.trim().length < 10) return showToast('⚠️ 内容过短', 'warn')
+    if (userInput.value.trim().length < 10) return showToast(t('⚠️ 内容过短'), 'warn')
     await processTextInput(userInput.value.trim())
   }
 }
@@ -148,11 +153,11 @@ async function processFileInput() {
 }
 
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
-function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制')+'成功')) }
-function saveToHistory(t, i, r) { try { const k = `ag_${t}`; const h = JSON.parse(localStorage.getItem(k)||'[]'); h.unshift({id:Date.now(),input:i,output:r}); localStorage.setItem(k, JSON.stringify(h.slice(0,20))) } catch(e){} }
-function loadHistory(t) { try { historyList.value = JSON.parse(localStorage.getItem(`ag_${t}`)||'[]') } catch{ historyList.value = [] } }
+function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制成功'))) }
+function saveToHistory(t_id, i, r) { try { const k = `ag_${t_id}`; const h = JSON.parse(localStorage.getItem(k)||'[]'); h.unshift({id:Date.now(),input:i,output:r}); localStorage.setItem(k, JSON.stringify(h.slice(0,20))) } catch(e){} }
+function loadHistory(t_id) { try { historyList.value = JSON.parse(localStorage.getItem(`ag_${t_id}`)||'[]') } catch{ historyList.value = [] } }
 function loadHistoryItem(item) { userInput.value = item.input; output.value = item.output; showHistory.value = false }
-function clearHistory() { localStorage.removeItem(`ag_${selectedTool.value}`); historyList.value = []; showHistory.value = false }
+function clearHistory() { localStorage.removeItem(`ag_${selectedTool.value}`); historyList.value = []; showHistory.value = false; showToast(t('历史记录已清空')) }
 
 async function secureExportToPDF(password) {
   if (!password) return; isExporting.value = true; const el = document.getElementById('report-content')
@@ -209,7 +214,7 @@ onUnmounted(() => {
             {{ isDark ? '🌙' : '☀️' }}
           </button>
           
-          <select v-model="currentLang" class="glass-input !py-1 !px-3 !rounded-full !text-sm !w-auto cursor-pointer dark:bg-slate-800/80 outline-none">
+          <select :value="currentLang" @change="changeLang" class="glass-input !py-1 !px-3 !rounded-full !text-sm !w-auto cursor-pointer dark:bg-slate-800/80 outline-none">
             <option value="zh-CN">🇨🇳 简体中文</option>
             <option value="zh-TW">🇭🇰 繁體中文</option>
             <option value="en">🇬🇧 English</option>
@@ -272,9 +277,27 @@ onUnmounted(() => {
                 </div>
               </div>
               <button @click="showHistory = !showHistory" class="px-5 py-2.5 rounded-full font-bold bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
-                {{ t('📂 历史记录') }}
+                {{ t('📂 历史记录') }} ({{ historyList.length }})
               </button>
             </div>
+
+            <transition name="fade">
+              <div v-if="showHistory" class="mb-10 p-6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                  <h4 class="font-bold text-slate-800 dark:text-white">{{ t('最近处理历史') }}</h4>
+                  <button v-if="historyList.length > 0" @click="clearHistory" class="text-sm text-red-500 hover:text-red-600 font-medium bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-full transition">{{ t('清空历史') }}</button>
+                </div>
+                <div v-if="historyList.length === 0" class="text-sm text-slate-500 py-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">{{ t('暂无历史记录') }}</div>
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                  <div v-for="item in historyList" :key="item.id" @click="loadHistoryItem(item)" class="p-4 bg-white/80 dark:bg-slate-800 rounded-2xl cursor-pointer hover:shadow-md border border-transparent transition group flex flex-col justify-between">
+                    <div class="text-sm text-slate-700 dark:text-slate-300 line-clamp-3 mb-3">{{ item.input }}</div>
+                    <div class="text-xs text-slate-400 flex items-center justify-between">
+                      <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition">{{ t('载入此记录 →') }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </transition>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-start">
               <div class="lg:col-span-5 flex flex-col">
@@ -289,7 +312,7 @@ onUnmounted(() => {
                 </div>
 
                 <div v-if="inputMode === 'text'" class="flex flex-col">
-                  <textarea v-model="userInput" :placeholder="t(currentTool.placeholder || '在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[250px] resize-none"></textarea>
+                  <textarea v-model="userInput" :placeholder="t(currentTool.placeholder) || t('在此输入您需要分析的具体段落或描述内容...')" class="glass-input min-h-[250px] resize-none"></textarea>
                 </div>
 
                 <div v-if="inputMode === 'file'" class="flex flex-col">
@@ -348,5 +371,13 @@ onUnmounted(() => {
         </div>
       </div>
     </transition>
+
+    <div id="report-content" class="pdf-export-area">
+       <div class="p-10 font-sans text-black">
+         <h1 class="text-2xl font-bold border-b-2 border-black pb-4 mb-6">{{ t('Aegis AI 效能中枢 · 安全报告') }}</h1>
+         <div v-html="renderedOutput" class="markdown-output !text-black"></div>
+         <div class="mt-10 pt-4 border-t border-gray-300 text-xs text-gray-500">Powered by Aegis AI · {{ exportDate }}</div>
+       </div>
+    </div>
   </div>
 </template>
