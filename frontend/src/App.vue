@@ -12,6 +12,29 @@ const currentView = ref('landing')
 const selectedTool = ref(null)
 const isOutputExpanded = ref(false)
 
+// ── 动态交互背景状态 (新增物理追踪逻辑) ────────────────────
+const targetX = ref(0)
+const targetY = ref(0)
+const currentX = ref(0)
+const currentY = ref(0)
+let animationFrameId = null
+
+function handlePointerMove(e) {
+  // 兼容鼠标和触摸事件
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  // 计算基于屏幕中心点的偏移量
+  targetX.value = clientX - window.innerWidth / 2
+  targetY.value = clientY - window.innerHeight / 2
+}
+
+function animateBackground() {
+  // 引入缓动算法 (Easing)，使得跟随平滑自然而不生硬
+  currentX.value += (targetX.value - currentX.value) * 0.05
+  currentY.value += (targetY.value - currentY.value) * 0.05
+  animationFrameId = requestAnimationFrame(animateBackground)
+}
+
 // ── 工作区与并发控制状态 ────────────────────────────────────
 const loading = ref(false)
 const output = ref('')
@@ -19,7 +42,7 @@ const error = ref('')
 const userInput = ref('')
 const startTime = ref(0)
 const elapsedMs = ref(0)
-let currentRequestId = 0 // 用于精准拦截被取消的请求
+let currentRequestId = 0 
 
 // ── 文件上传状态 ──────────────────────────────────────────
 const selectedFile = ref(null)
@@ -113,7 +136,7 @@ function renderFinanceJSON(json) {
 function resetWorkspace() {
   output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0
   showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0
-  currentRequestId++ // 重置时作废进行中的请求
+  currentRequestId++ 
 }
 
 // ── 文件处理逻辑 ──────────────────────────
@@ -158,9 +181,9 @@ async function parseImageOCR(file) {
 }
 function removeFile() { selectedFile.value = null; parseStatus.value = ''; if(fileInputRef.value) fileInputRef.value.value = '' }
 
-// ── 提交与打断处理 (核心更新) ──────────────────────────────
+// ── 提交与打断处理 ──────────────────────────────
 function cancelAnalysis() {
-  currentRequestId++ // 生成新 ID，直接作废当前等待中的请求回调
+  currentRequestId++ 
   loading.value = false
   showToast('已安全中断，您可以修改后重新分析', 'warn')
 }
@@ -178,11 +201,11 @@ async function processInput() {
 
 async function processTextInput(text) {
   loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
-  const reqId = ++currentRequestId // 记录当前请求 ID
+  const reqId = ++currentRequestId 
   
   try {
     const result = await callAI(selectedTool.value, text)
-    if (reqId !== currentRequestId) return // 如果中途被取消，直接丢弃结果不渲染
+    if (reqId !== currentRequestId) return 
     
     output.value = result; elapsedMs.value = Date.now() - startTime.value
     saveToHistory(selectedTool.value, text.substring(0, 50), result); loadHistory(selectedTool.value)
@@ -196,7 +219,7 @@ async function processTextInput(text) {
 
 async function processFileInput() {
   loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
-  const reqId = ++currentRequestId // 记录当前请求 ID
+  const reqId = ++currentRequestId 
   
   try {
     let result
@@ -209,7 +232,7 @@ async function processFileInput() {
     } else {
       result = await callAI(selectedTool.value, parsedText.value)
     }
-    if (reqId !== currentRequestId) return // 如果中途被取消，直接丢弃结果不渲染
+    if (reqId !== currentRequestId) return 
     
     output.value = result; elapsedMs.value = Date.now() - startTime.value
     saveToHistory(selectedTool.value, `[文件] ${selectedFile.value.name}`, result); loadHistory(selectedTool.value)
@@ -221,7 +244,7 @@ async function processFileInput() {
   }
 }
 
-// ── 历史记录方法 (补全) ──────────────────────────
+// ── 历史记录方法 ──────────────────────────
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
 function clearInput() { userInput.value = ''; output.value = '' }
 function saveToHistory(t, i, r) { try { const k = `ag_${t}`; const h = JSON.parse(localStorage.getItem(k)||'[]'); h.unshift({id:Date.now(),input:i,output:r}); localStorage.setItem(k, JSON.stringify(h.slice(0,20))) } catch(e){} }
@@ -251,12 +274,36 @@ async function secureExportToPDF(password) {
   } catch(e) { showToast('导出失败','error') } finally { isExporting.value = false }
 }
 
-onMounted(() => document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='Enter') processInput() }))
+onMounted(() => {
+  document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='Enter') processInput() })
+  
+  // 挂载交互背景监听器
+  window.addEventListener('mousemove', handlePointerMove)
+  window.addEventListener('touchmove', handlePointerMove, { passive: true })
+  animateBackground()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', handlePointerMove)
+  window.removeEventListener('touchmove', handlePointerMove)
+  cancelAnimationFrame(animationFrameId)
+})
 </script>
 
 <template>
   <div class="min-h-screen relative font-sans">
-    <div class="bg-scene"><div class="orb orb-blue"></div><div class="orb orb-pink"></div><div class="orb orb-mint"></div></div>
+    
+    <div class="bg-scene">
+      <div class="orb-container" :style="{ transform: `translate(${currentX * 0.15}px, ${currentY * 0.15}px)` }">
+        <div class="orb orb-blue"></div>
+      </div>
+      <div class="orb-container" :style="{ transform: `translate(${currentX * -0.1}px, ${currentY * -0.1}px)` }">
+        <div class="orb orb-pink"></div>
+      </div>
+      <div class="orb-container" :style="{ transform: `translate(${currentX * 0.05}px, ${currentY * 0.05}px)` }">
+        <div class="orb orb-mint"></div>
+      </div>
+    </div>
 
     <transition name="fade">
       <div v-if="toast.show" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full bg-white/80 backdrop-blur-xl border border-white shadow-xl text-sm font-medium text-slate-800 flex items-center gap-2">
