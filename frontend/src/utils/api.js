@@ -209,7 +209,7 @@ export const TOOLS_CONFIG = {
   writer: {
     id: 'writer',
     name: '智能文书助手',
-    icon: '📝',
+    icon: '📃',
     description: '输入零散要点，AI 自动转换为结构化职场公文',
     color: 'blue',
     inputType: 'text',
@@ -236,7 +236,7 @@ export const TOOLS_CONFIG = {
   auditor: {
     id: 'auditor',
     name: '合同/文档审核',
-    icon: '🔍',
+    icon: '📁',
     description: '粘贴合同或文档文本，AI 自动扫描合规风险',
     color: 'pink',
     inputType: 'text',
