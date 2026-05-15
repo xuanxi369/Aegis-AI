@@ -70,6 +70,8 @@ export const dictionary = {
     '清空记录': '清空記錄',
     '文件解析历史': '文件解析歷史',
     '执行 Aegis 分析': '執行 Aegis 分析',
+    '语句段落分析': '語句段落分析',
+    '工作台': '工作台', 
     'Aegis 效能中枢 · 安全报告': 'Aegis 效能中樞 · 安全報告'
   },
   'en': {
@@ -142,6 +144,8 @@ export const dictionary = {
     '清空记录': 'Clear History',
     '文件解析历史': 'File Parsing History',
     '执行 Aegis 分析': 'Execute Aegis Analysis',
+    '语句段落分析': 'Sentence and Paragraph Analysis',
+    '工作台': 'Workbench',
     'Aegis 效能中枢 · 安全报告': 'Aegis Performance Hub · Security Report'
   },
   'ja': {
@@ -214,6 +218,8 @@ export const dictionary = {
     '清空记录': '履歴をクリア',
     '文件解析历史': 'ファイル解析履歴',
     '执行 Aegis 分析': 'Aegis 分析を実行',
+    '语句段落分析': '文・段落分析',
+    '工作台': 'ワークベンチ',
     'Aegis 效能中枢 · 安全报告': 'Aegis パフォーマンスハブ · セキュリティレポート'
   },
   'ko': {
@@ -286,6 +292,8 @@ export const dictionary = {
     '清空记录': '기록 삭제',
     '文件解析历史': '파일 분석 이력',
     '执行 Aegis 分析': 'Aegis 분석 실행',
+    '语句段落分析': '문장 및 단락 분석',
+    '工作台': '워크벤치',
     'Aegis 效能中枢 · 安全报告': 'Aegis 성과 허브 · 보안 보고서'
   },
   'de': {
@@ -358,6 +366,8 @@ export const dictionary = {
     '清空记录': 'Verlauf löschen',
     '文件解析历史': 'Dateianalyse-Verlauf',
     '执行 Aegis 分析': 'Aegis-Analyse ausführen',
+    '语句段落分析': 'Satz- und Absatzanalyse',
+    '工作台': 'Arbeitsbereich',
     'Aegis 效能中枢 · 安全报告': 'Aegis Leistungszentrale · Sicherheitsbericht'
   }
 }
