@@ -134,6 +134,14 @@ export const dictionary = {
     '上传图片/音频，实现高精度数据总结与归纳': 'Upload images/audio for high-precision data summarization and analysis',
     '输入文档密码': 'Enter document password',
     '综合风险评分': 'Overall Risk Score',
+    '输入或粘贴文本片段进行智能结构化解析': 'Enter or paste text snippets for intelligent structured parsing',
+    '支持多种格式文档上传扫描提取核心数据': 'Supports uploading and scanning multi-format documents to extract core data',
+    '综合历史记录': 'Comprehensive History',
+    '本页记录': 'Current Page History',
+    '段落分析历史': 'Paragraph Analysis History',
+    '清空记录': 'Clear History',
+    '文件解析历史': 'File Parsing History',
+    '执行 Aegis 分析': 'Execute Aegis Analysis',
     'Aegis 效能中枢 · 安全报告': 'Aegis Performance Hub · Security Report'
   },
   'ja': {
@@ -198,6 +206,14 @@ export const dictionary = {
     '上传图片/音频，实现高精度数据总结与归纳': '画像/音声をアップロードして高精度なデータ要約と分析を実現',
     '输入文档密码': '文書パスワードを入力',
     '综合风险评分': '総合リスクスコア',
+    '输入或粘贴文本片段进行智能结构化解析': 'テキストスニペットを入力または貼り付けてスマート構造化解析を実行',
+    '支持多种格式文档上传扫描提取核心数据': '複数形式のドキュメントのアップロード・スキャンによるコアデータ抽出に対応',
+    '综合历史记录': '総合履歴',
+    '本页记录': 'このページの履歴',
+    '段落分析历史': '段落分析履歴',
+    '清空记录': '履歴をクリア',
+    '文件解析历史': 'ファイル解析履歴',
+    '执行 Aegis 分析': 'Aegis 分析を実行',
     'Aegis 效能中枢 · 安全报告': 'Aegis パフォーマンスハブ · セキュリティレポート'
   },
   'ko': {
@@ -262,6 +278,14 @@ export const dictionary = {
     '上传图片/音频，实现高精度数据总结与归纳': '이미지/오디오를 업로드하여 고정밀 데이터 요약 및 분석 구현',
     '输入文档密码': '문서 비밀번호 입력',
     '综合风险评分': '종합 리스크 점수',
+    '输入或粘贴文本片段进行智能结构化解析': '텍스트 스니펫을 입력하거나 붙여넣어 스마트 구조화 분석 수행',
+    '支持多种格式文档上传扫描提取核心数据': '다양한 형식의 문서 업로드 및 스캔을 통한 핵심 데이터 추출 지원',
+    '综合历史记录': '종합 이력',
+    '本页记录': '현재 페이지 기록',
+    '段落分析历史': '단락 분석 이력',
+    '清空记录': '기록 삭제',
+    '文件解析历史': '파일 분석 이력',
+    '执行 Aegis 分析': 'Aegis 분석 실행',
     'Aegis 效能中枢 · 安全报告': 'Aegis 성과 허브 · 보안 보고서'
   },
   'de': {
@@ -326,6 +350,14 @@ export const dictionary = {
     '上传图片/音频，实现高精度数据总结与归纳': 'Bilder/Audio hochladen für hochpräzise Datenzusammenfassung und -analyse',
     '输入文档密码': 'Dokumentpasswort eingeben',
     '综合风险评分': 'Gesamtrisikobewertung',
+    '输入或粘贴文本片段进行智能结构化解析': 'Textausschnitte eingeben oder einfügen für intelligente strukturierte Analyse',
+    '支持多种格式文档上传扫描提取核心数据': 'Unterstützt das Hochladen und Scannen von Dokumenten in mehreren Formaten zur Extraktion von Kerndaten',
+    '综合历史记录': 'Gesamtverlauf',
+    '本页记录': 'Verlauf dieser Seite',
+    '段落分析历史': 'Absatzanalyse-Verlauf',
+    '清空记录': 'Verlauf löschen',
+    '文件解析历史': 'Dateianalyse-Verlauf',
+    '执行 Aegis 分析': 'Aegis-Analyse ausführen',
     'Aegis 效能中枢 · 安全报告': 'Aegis Leistungszentrale · Sicherheitsbericht'
   }
 }
