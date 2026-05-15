@@ -339,7 +339,7 @@ onUnmounted(() => {
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
           <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('✨面向传统企业文职人员的智能办公平台') }}</h3>
-          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('注意：PDF导出功能暂停服务，请谅解。') }}</h3>
+          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('注意：PDF导出功能目前已暂停服务，还请谅解。') }}</h3>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
             {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
