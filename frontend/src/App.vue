@@ -1,86 +1,86 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { marked } from 'marked'
-import html2pdf from 'html2pdf.js'
-import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
-import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js'
-import { dictionary } from './utils/i18n.js' 
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { marked } from 'marked';
+import html2pdf from 'html2pdf.js';
+import { encryptPDFWithPassword } from './utils/pdfEncrypt.js';
+import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js';
+import { dictionary } from './utils/i18n.js';
 
-marked.setOptions({ breaks: true, gfm: true })
+marked.setOptions({ breaks: true, gfm: true });
 
 // ── 核心响应式语言逻辑 ────────────────────
-const currentLang = ref(localStorage.getItem('aegis_lang') || 'zh-CN')
+const currentLang = ref(localStorage.getItem('aegis_lang') || 'zh-CN');
 
 function t(text) {
-  if (!text) return ''
-  if (currentLang.value === 'zh-CN') return text
-  return dictionary[currentLang.value]?.[text] || text
+  if (!text) return '';
+  if (currentLang.value === 'zh-CN') return text;
+  return dictionary[currentLang.value]?.[text] || text;
 }
 
 function changeLang(event) {
-  const lang = event.target.value
-  currentLang.value = lang
-  localStorage.setItem('aegis_lang', lang)
+  const lang = event.target.value;
+  currentLang.value = lang;
+  localStorage.setItem('aegis_lang', lang);
 }
 
 // ── 视图与日夜切换 ─────────────────────────
 // currentView: 'landing' | 'dashboard' | 'tool_select' | 'tool_text' | 'tool_file'
-const currentView = ref('landing')
-const selectedTool = ref(null)
-const isOutputExpanded = ref(false)
-const inputMode = ref('text') 
-const isDark = ref(localStorage.getItem('aegis_theme') === 'dark')
+const currentView = ref('landing');
+const selectedTool = ref(null);
+const isOutputExpanded = ref(false);
+const inputMode = ref('text');
+const isDark = ref(localStorage.getItem('aegis_theme') === 'dark');
 
 function toggleTheme() {
-  isDark.value = !isDark.value
-  const mode = isDark.value ? 'dark' : 'light'
-  document.documentElement.classList.toggle('dark', isDark.value)
-  localStorage.setItem('aegis_theme', mode)
+  isDark.value = !isDark.value;
+  const mode = isDark.value ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', isDark.value);
+  localStorage.setItem('aegis_theme', mode);
 }
 
 // ── 动态交互背景 ─────────────────────────
-const targetX = ref(0), targetY = ref(0), currentX = ref(0), currentY = ref(0)
-let animationFrameId = null
+const targetX = ref(0), targetY = ref(0), currentX = ref(0), currentY = ref(0);
+let animationFrameId = null;
 
 function handlePointerMove(e) {
-  const x = e.touches ? e.touches[0].clientX : e.clientX
-  const y = e.touches ? e.touches[0].clientY : e.clientY
-  targetX.value = x - window.innerWidth / 2
-  targetY.value = y - window.innerHeight / 2
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  targetX.value = x - window.innerWidth / 2;
+  targetY.value = y - window.innerHeight / 2;
 }
 
 function animateBackground() {
-  currentX.value += (targetX.value - currentX.value) * 0.05
-  currentY.value += (targetY.value - currentY.value) * 0.05
-  animationFrameId = requestAnimationFrame(animateBackground)
+  currentX.value += (targetX.value - currentX.value) * 0.05;
+  currentY.value += (targetY.value - currentY.value) * 0.05;
+  animationFrameId = requestAnimationFrame(animateBackground);
 }
 
 // ── 工作区逻辑 ──────────────────────────
-const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
-const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
-const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false)
-const showPasswordModal = ref(false), pdfPassword = ref(''), isExporting = ref(false)
-let currentRequestId = 0 
-const startTime = ref(0)
+const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0);
+const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0);
+const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false);
+const showPasswordModal = ref(false), pdfPassword = ref(''), isExporting = ref(false);
+let currentRequestId = 0;
+const startTime = ref(0);
 
 // 独立历史记录库
-const historyText = ref([])
-const historyFile = ref([])
+const historyText = ref([]);
+const historyFile = ref([]);
 
 // 综合历史记录（选择页使用）
 const combinedHistoryList = computed(() => {
-  return [...historyText.value, ...historyFile.value].sort((a, b) => b.id - a.id)
-})
+  return [...historyText.value, ...historyFile.value].sort((a, b) => b.id - a.id);
+});
 
 // 单一模式历史记录（工作页使用）
 const historyList = computed(() => {
-  return inputMode.value === 'text' ? historyText.value : historyFile.value
-})
+  return inputMode.value === 'text' ? historyText.value : historyFile.value;
+});
 
 const exportDate = computed(() => {
-  const d = new Date()
-  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`
-})
+  const d = new Date();
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+});
 
 // 核心修复：强制注入响应式依赖，并在前端拦截重写模块配置
 const tools = computed(() => {
@@ -108,78 +108,78 @@ const tools = computed(() => {
       example: customExample || tool.example,
       displayName: t(tool.name),
       displayDesc: t(tool.description)
-    }
-  })
-})
+    };
+  });
+});
 
-const currentTool = computed(() => selectedTool.value ? tools.value.find(t => t.id === selectedTool.value) : null)
+const currentTool = computed(() => selectedTool.value ? tools.value.find(t => t.id === selectedTool.value) : null);
 
 const renderedOutput = computed(() => {
-  if (!output.value) return ''
+  if (!output.value) return '';
   if (selectedTool.value === 'finance_audit') {
-    try { return renderFinanceJSON(JSON.parse(output.value)) } 
-    catch { return marked.parse(output.value) }
+    try { return renderFinanceJSON(JSON.parse(output.value)); } 
+    catch { return marked.parse(output.value); }
   }
-  return marked.parse(output.value)
-})
+  return marked.parse(output.value);
+});
 
-const toast = ref({ show: false, message: '', type: 'success' })
-let toastTimer = null
+const toast = ref({ show: false, message: '', type: 'success' });
+let toastTimer = null;
 function showToast(msg, type = 'success') {
-  clearTimeout(toastTimer)
-  toast.value = { show: true, message: msg, type }
-  toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
+  clearTimeout(toastTimer);
+  toast.value = { show: true, message: msg, type };
+  toastTimer = setTimeout(() => { toast.value.show = false; }, 3000);
 }
 
 // ── 页面路由与跳转逻辑 ──────────────────────────
 
 function openTool(toolId) {
-  selectedTool.value = toolId
-  resetWorkspace()
-  loadHistory(toolId)
+  selectedTool.value = toolId;
+  resetWorkspace();
+  loadHistory(toolId);
   
   if (toolId === 'ocr_corrector') {
     // 图片音频识别：跳过选择页，直达文件页
-    inputMode.value = 'file'
-    currentView.value = 'tool_file'
+    inputMode.value = 'file';
+    currentView.value = 'tool_file';
   } else {
     // 其他功能：进入选择分发页
-    currentView.value = 'tool_select'
+    currentView.value = 'tool_select';
   }
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function openMode(mode) {
-  resetWorkspace()
-  inputMode.value = mode
-  currentView.value = mode === 'text' ? 'tool_text' : 'tool_file'
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  resetWorkspace();
+  inputMode.value = mode;
+  currentView.value = mode === 'text' ? 'tool_text' : 'tool_file';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function goBack() {
   if (currentView.value === 'tool_select' || selectedTool.value === 'ocr_corrector') {
-    currentView.value = 'dashboard'
-    selectedTool.value = null
+    currentView.value = 'dashboard';
+    selectedTool.value = null;
   } else {
     // 从具体功能页返回选择页
-    currentView.value = 'tool_select'
-    resetWorkspace()
-    loadHistory(selectedTool.value) 
+    currentView.value = 'tool_select';
+    resetWorkspace();
+    loadHistory(selectedTool.value); 
   }
 }
 
 function goBackToDashboard() {
-  currentView.value = 'dashboard'
-  selectedTool.value = null
-  isOutputExpanded.value = false 
-  showHistory.value = false
-  resetWorkspace()
+  currentView.value = 'dashboard';
+  selectedTool.value = null;
+  isOutputExpanded.value = false;
+  showHistory.value = false;
+  resetWorkspace();
 }
 
 function resetWorkspace() {
-  output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0
-  showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0
-  currentRequestId++ 
+  output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0;
+  showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0;
+  currentRequestId++;
 }
 
 // ── 数据历史隔离与保存 ──────────────────────────
@@ -196,17 +196,17 @@ function saveToHistory(t_id, mode, i, r) {
 }
 
 function loadHistory(t_id) {
-  try { historyText.value = JSON.parse(localStorage.getItem(`ag_${t_id}_text`)||'[]') } catch{ historyText.value = [] }
-  try { historyFile.value = JSON.parse(localStorage.getItem(`ag_${t_id}_file`)||'[]') } catch{ historyFile.value = [] }
+  try { historyText.value = JSON.parse(localStorage.getItem(`ag_${t_id}_text`)||'[]'); } catch{ historyText.value = []; }
+  try { historyFile.value = JSON.parse(localStorage.getItem(`ag_${t_id}_file`)||'[]'); } catch{ historyFile.value = []; }
 }
 
 function loadHistoryItem(item) {
-  inputMode.value = item.mode
-  currentView.value = item.mode === 'text' ? 'tool_text' : 'tool_file'
-  userInput.value = item.mode === 'text' ? item.input : ''
-  output.value = item.output
-  showHistory.value = false
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  inputMode.value = item.mode;
+  currentView.value = item.mode === 'text' ? 'tool_text' : 'tool_file';
+  userInput.value = item.mode === 'text' ? item.input : '';
+  output.value = item.output;
+  showHistory.value = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function clearCurrentHistory() { 
@@ -214,14 +214,14 @@ function clearCurrentHistory() {
   if (inputMode.value === 'text') historyText.value = [];
   else historyFile.value = [];
   showHistory.value = false; 
-  showToast(t('历史记录已清空')) 
+  showToast(t('历史记录已清空'));
 }
 
 function clearCombinedHistory() {
   localStorage.removeItem(`ag_${selectedTool.value}_text`); 
   localStorage.removeItem(`ag_${selectedTool.value}_file`); 
   historyText.value = []; historyFile.value = [];
-  showToast(t('历史记录已清空')) 
+  showToast(t('历史记录已清空'));
 }
 
 function formatDate(timestamp) {
@@ -230,428 +230,159 @@ function formatDate(timestamp) {
 }
 
 function renderFinanceJSON(json) {
-  const score = json.risk_score ?? 0
-  const scoreColor = score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : '#EF4444'
-  let html = `<div class="bg-white/50 dark:bg-slate-800/50 rounded-3xl p-6 border border-white/60 dark:border-slate-700">`
-  html += `<div class="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">`
-  html += `<h3 class="text-xl font-bold text-slate-800 dark:text-white m-0">📄 ${json.document_type || t('财务单据')}</h3>`
-  html += `<span class="px-4 py-1.5 rounded-full text-sm font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">${json.audit_status}</span>`
-  html += `</div>`
+  const score = json.risk_score ?? 0;
+  const scoreColor = score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : '#EF4444';
+  let html = `<div class="bg-white/50 dark:bg-slate-800/50 rounded-3xl p-6 border border-white/60 dark:border-slate-700">`;
+  html += `<div class="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">`;
+  html += `<h3 class="text-xl font-bold text-slate-800 dark:text-white m-0">📄 ${json.document_type || t('财务单据')}</h3>`;
+  html += `<span class="px-4 py-1.5 rounded-full text-sm font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">${json.audit_status}</span>`;
+  html += `</div>`;
   
-  html += `<div class="mb-6"><p class="text-sm text-slate-500 mb-2">${t('综合风险评分')}</p>`
-  html += `<div class="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div style="width:${score}%;background:${scoreColor}" class="h-full rounded-full transition-all"></div></div>`
-  html += `</div>`
+  html += `<div class="mb-6"><p class="text-sm text-slate-500 mb-2">${t('综合风险评分')}</p>`;
+  html += `<div class="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div style="width:${score}%;background:${scoreColor}" class="h-full rounded-full transition-all"></div></div>`;
+  html += `</div>`;
 
   if (json.anomaly_detection?.length) {
-    html += `<div class="space-y-3">`
+    html += `<div class="space-y-3">`;
     json.anomaly_detection.forEach(a => {
-      html += `<div class="bg-white/80 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">`
-      html += `<div class="font-semibold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><span class="w-2 h-2 rounded-full ${a.severity==='High'?'bg-red-500':'bg-yellow-500'}"></span>${a.issue}</div>`
-      if(a.remediation) html += `<div class="text-sm text-slate-600 dark:text-slate-400 mt-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">${a.remediation}</div>`
-      html += `</div>`
-    })
-    html += `</div>`
+      html += `<div class="bg-white/80 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">`;
+      html += `<div class="font-semibold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><span class="w-2 h-2 rounded-full ${a.severity==='High'?'bg-red-500':'bg-yellow-500'}"></span>${a.issue}</div>`;
+      if(a.remediation) html += `<div class="text-sm text-slate-600 dark:text-slate-400 mt-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">${a.remediation}</div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
   }
-  html += `</div>`
-  return html
+  html += `</div>`;
+  return html;
 }
 
-function onFileSelect(e) { const f = e.target.files?.[0]; if (f) handleFile(f) }
-function onDrop(e) { e.preventDefault(); isDragOver.value = false; const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }
-function onDragOver(e) { e.preventDefault(); isDragOver.value = true }
-function onDragLeave() { isDragOver.value = false }
+function onFileSelect(e) { const f = e.target.files?.[0]; if (f) handleFile(f); }
+function onDrop(e) { e.preventDefault(); isDragOver.value = false; const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }
+function onDragOver(e) { e.preventDefault(); isDragOver.value = true; }
+function onDragLeave() { isDragOver.value = false; }
 
 function handleFile(file) {
-  const MAX_DOC = 20 * 1024 * 1024, MAX_AUDIO = 10 * 1024 * 1024, MAX_IMG = 10 * 1024 * 1024
-  const ext = file.name.split('.').pop().toLowerCase()
-  const audioExts = ['wav', 'flac', 'ape', 'mp3', 'aac', 'wma', 'aiff', 'mp4']
-  const imageExts = ['jpg', 'jpeg', 'png']
-  const limit = audioExts.includes(ext)```vue
-<script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { marked } from 'marked'
-import html2pdf from 'html2pdf.js'
-import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
-import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js'
-import { dictionary } from './utils/i18n.js' 
+  const MAX_DOC = 20 * 1024 * 1024, MAX_AUDIO = 10 * 1024 * 1024, MAX_IMG = 10 * 1024 * 1024;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const audioExts = ['wav', 'flac', 'ape', 'mp3', 'aac', 'wma', 'aiff', 'mp4'];
+  const imageExts = ['jpg', 'jpeg', 'png'];
+  const limit = audioExts.includes(ext) ? MAX_AUDIO : imageExts.includes(ext) ? MAX_IMG : MAX_DOC;
 
-marked.setOptions({ breaks: true, gfm: true })
-
-// ── 核心响应式语言逻辑 ────────────────────
-const currentLang = ref(localStorage.getItem('aegis_lang') || 'zh-CN')
-
-function t(text) {
-  if (!text) return ''
-  if (currentLang.value === 'zh-CN') return text
-  return dictionary[currentLang.value]?.[text] || text
-}
-
-function changeLang(event) {
-  const lang = event.target.value
-  currentLang.value = lang
-  localStorage.setItem('aegis_lang', lang)
-}
-
-// ── 视图与日夜切换 ─────────────────────────
-// currentView: 'landing' | 'dashboard' | 'tool_select' | 'tool_text' | 'tool_file'
-const currentView = ref('landing')
-const selectedTool = ref(null)
-const isOutputExpanded = ref(false)
-const inputMode = ref('text') 
-const isDark = ref(localStorage.getItem('aegis_theme') === 'dark')
-
-function toggleTheme() {
-  isDark.value = !isDark.value
-  const mode = isDark.value ? 'dark' : 'light'
-  document.documentElement.classList.toggle('dark', isDark.value)
-  localStorage.setItem('aegis_theme', mode)
-}
-
-// ── 动态交互背景 ─────────────────────────
-const targetX = ref(0), targetY = ref(0), currentX = ref(0), currentY = ref(0)
-let animationFrameId = null
-
-function handlePointerMove(e) {
-  const x = e.touches ? e.touches[0].clientX : e.clientX
-  const y = e.touches ? e.touches[0].clientY : e.clientY
-  targetX.value = x - window.innerWidth / 2
-  targetY.value = y - window.innerHeight / 2
-}
-
-function animateBackground() {
-  currentX.value += (targetX.value - currentX.value) * 0.05
-  currentY.value += (targetY.value - currentY.value) * 0.05
-  animationFrameId = requestAnimationFrame(animateBackground)
-}
-
-// ── 工作区逻辑 ──────────────────────────
-const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
-const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
-const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false)
-const showPasswordModal = ref(false), pdfPassword = ref(''), isExporting = ref(false)
-let currentRequestId = 0 
-const startTime = ref(0)
-
-// 独立历史记录库
-const historyText = ref([])
-const historyFile = ref([])
-
-// 综合历史记录（选择页使用）
-const combinedHistoryList = computed(() => {
-  return [...historyText.value, ...historyFile.value].sort((a, b) => b.id - a.id)
-})
-
-// 单一模式历史记录（工作页使用）
-const historyList = computed(() => {
-  return inputMode.value === 'text' ? historyText.value : historyFile.value
-})
-
-const exportDate = computed(() => {
-  const d = new Date()
-  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`
-})
-
-// 核心修复：强制注入响应式依赖，并在前端拦截重写模块配置
-const tools = computed(() => {
-  const lang = currentLang.value; // 强制 Vue 收集依赖
-  return Object.values(TOOLS_CONFIG).map(tool => {
-    
-    // 初始化自定义配置
-    let customInputType = tool.inputType;
-    let customExample = tool.example;
-
-    // 针对后三个模块进行配置拦截重写
-    if (tool.id === 'hr_resume') {
-      customInputType = 'text'; // 强制改为 text，开启双模式
-      customExample = `基本信息：张某某，男，8年工作经验\n求职意向：高级产品经理/产品总监\n\n【核心经历】\n2021.05 - 至今 | 某出海互联网公司 | 产品总监\n- 负责公司核心社交产品从0到1的搭建，带领15人产研团队。\n- 期间日活突破100万，但由于公司资金链问题，近期准备看机会。\n\n2018.03 - 2021.04 | 某一线大厂 | 高级产品经理\n- 负责电商核心交易链路重构，提升转化率约 15%。\n- 参与多次大促活动，具有极强的抗压能力。\n\n【自我评价】\n逻辑清晰，对数据高度敏感。能快速适应高压环境，执行力强，但有时对团队细节管理偏于严苛。`;
-    } else if (tool.id === 'finance_audit') {
-      customInputType = 'text'; // 强制改为 text，开启双模式
-      customExample = `报销单号：EX-2026-0515\n申请人：李四 (大客户销售部)\n申请日期：2026-05-02\n\n【报销明细】\n1. 4月30日 差旅机票：¥1,500 (符合标准出差审批)\n2. 5月01日 客户招待费：¥5,000 (备注：均为五一假期当天开具的连号餐饮发票，且金额为整数)\n3. 5月02日 办公用品采购：¥3,800 (备注：购买电子设备，但未见财务资产库入库单，且为节假日发生)\n4. 5月03日 市内交通费：¥800 (备注：全为出租车定额发票)`;
-    } else if (tool.id === 'ocr_corrector') {
-      customInputType = 'file'; // 最后一个模块保持纯文件模式
-    }
-
-    return {
-      ...tool,
-      inputType: customInputType,
-      example: customExample || tool.example,
-      displayName: t(tool.name),
-      displayDesc: t(tool.description)
-    }
-  })
-})
-
-const currentTool = computed(() => selectedTool.value ? tools.value.find(t => t.id === selectedTool.value) : null)
-
-const renderedOutput = computed(() => {
-  if (!output.value) return ''
-  if (selectedTool.value === 'finance_audit') {
-    try { return renderFinanceJSON(JSON.parse(output.value)) } 
-    catch { return marked.parse(output.value) }
-  }
-  return marked.parse(output.value)
-})
-
-const toast = ref({ show: false, message: '', type: 'success' })
-let toastTimer = null
-function showToast(msg, type = 'success') {
-  clearTimeout(toastTimer)
-  toast.value = { show: true, message: msg, type }
-  toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
-}
-
-// ── 页面路由与跳转逻辑 ──────────────────────────
-
-function openTool(toolId) {
-  selectedTool.value = toolId
-  resetWorkspace()
-  loadHistory(toolId)
-  
-  if (toolId === 'ocr_corrector') {
-    // 图片音频识别：跳过选择页，直达文件页
-    inputMode.value = 'file'
-    currentView.value = 'tool_file'
-  } else {
-    // 其他功能：进入选择分发页
-    currentView.value = 'tool_select'
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-function openMode(mode) {
-  resetWorkspace()
-  inputMode.value = mode
-  currentView.value = mode === 'text' ? 'tool_text' : 'tool_file'
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-function goBack() {
-  if (currentView.value === 'tool_select' || selectedTool.value === 'ocr_corrector') {
-    currentView.value = 'dashboard'
-    selectedTool.value = null
-  } else {
-    // 从具体功能页返回选择页
-    currentView.value = 'tool_select'
-    resetWorkspace()
-    loadHistory(selectedTool.value) 
-  }
-}
-
-function goBackToDashboard() {
-  currentView.value = 'dashboard'
-  selectedTool.value = null
-  isOutputExpanded.value = false 
-  showHistory.value = false
-  resetWorkspace()
-}
-
-function resetWorkspace() {
-  output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0
-  showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0
-  currentRequestId++ 
-}
-
-// ── 数据历史隔离与保存 ──────────────────────────
-
-function saveToHistory(t_id, mode, i, r) {
-  const k = `ag_${t_id}_${mode}`;
-  try { 
-    const h = JSON.parse(localStorage.getItem(k)||'[]'); 
-    h.unshift({id: Date.now(), input: i, output: r, mode: mode}); 
-    localStorage.setItem(k, JSON.stringify(h.slice(0,20)));
-    if(mode === 'text') historyText.value = h.slice(0,20);
-    else historyFile.value = h.slice(0,20);
-  } catch(e){} 
-}
-
-function loadHistory(t_id) {
-  try { historyText.value = JSON.parse(localStorage.getItem(`ag_${t_id}_text`)||'[]') } catch{ historyText.value = [] }
-  try { historyFile.value = JSON.parse(localStorage.getItem(`ag_${t_id}_file`)||'[]') } catch{ historyFile.value = [] }
-}
-
-function loadHistoryItem(item) {
-  inputMode.value = item.mode
-  currentView.value = item.mode === 'text' ? 'tool_text' : 'tool_file'
-  userInput.value = item.mode === 'text' ? item.input : ''
-  output.value = item.output
-  showHistory.value = false
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-function clearCurrentHistory() { 
-  localStorage.removeItem(`ag_${selectedTool.value}_${inputMode.value}`); 
-  if (inputMode.value === 'text') historyText.value = [];
-  else historyFile.value = [];
-  showHistory.value = false; 
-  showToast(t('历史记录已清空')) 
-}
-
-function clearCombinedHistory() {
-  localStorage.removeItem(`ag_${selectedTool.value}_text`); 
-  localStorage.removeItem(`ag_${selectedTool.value}_file`); 
-  historyText.value = []; historyFile.value = [];
-  showToast(t('历史记录已清空')) 
-}
-
-function formatDate(timestamp) {
-  const date = new Date(timestamp);
-  return `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-}
-
-function renderFinanceJSON(json) {
-  const score = json.risk_score ?? 0
-  const scoreColor = score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : '#EF4444'
-  let html = `<div class="bg-white/50 dark:bg-slate-800/50 rounded-3xl p-6 border border-white/60 dark:border-slate-700">`
-  html += `<div class="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">`
-  html += `<h3 class="text-xl font-bold text-slate-800 dark:text-white m-0">📄 ${json.document_type || t('财务单据')}</h3>`
-  html += `<span class="px-4 py-1.5 rounded-full text-sm font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">${json.audit_status}</span>`
-  html += `</div>`
-  
-  html += `<div class="mb-6"><p class="text-sm text-slate-500 mb-2">${t('综合风险评分')}</p>`
-  html += `<div class="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div style="width:${score}%;background:${scoreColor}" class="h-full rounded-full transition-all"></div></div>`
-  html += `</div>`
-
-  if (json.anomaly_detection?.length) {
-    html += `<div class="space-y-3">`
-    json.anomaly_detection.forEach(a => {
-      html += `<div class="bg-white/80 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">`
-      html += `<div class="font-semibold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><span class="w-2 h-2 rounded-full ${a.severity==='High'?'bg-red-500':'bg-yellow-500'}"></span>${a.issue}</div>`
-      if(a.remediation) html += `<div class="text-sm text-slate-600 dark:text-slate-400 mt-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">${a.remediation}</div>`
-      html += `</div>`
-    })
-    html += `</div>`
-  }
-  html += `</div>`
-  return html
-}
-
-function onFileSelect(e) { const f = e.target.files?.[0]; if (f) handleFile(f) }
-function onDrop(e) { e.preventDefault(); isDragOver.value = false; const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }
-function onDragOver(e) { e.preventDefault(); isDragOver.value = true }
-function onDragLeave() { isDragOver.value = false }
-
-function handleFile(file) {
-  const MAX_DOC = 20 * 1024 * 1024, MAX_AUDIO = 10 * 1024 * 1024, MAX_IMG = 10 * 1024 * 1024
-  const ext = file.name.split('.').pop().toLowerCase()
-  const audioExts = ['wav', 'flac', 'ape', 'mp3', 'aac', 'wma', 'aiff', 'mp4']
-  const imageExts = ['jpg', 'jpeg', 'png']
-  const limit = audioExts.includes(ext) ? MAX_AUDIO : imageExts.includes(ext) ? MAX_IMG : MAX_DOC
-
-  if (file.size > limit) return showToast(t('⚠️ 文件过大'), 'warn')
-  selectedFile.value = file; parsedText.value = ''; parseStatus.value = 'parsing'; output.value = ''; error.value = ''
+  if (file.size > limit) return showToast(t('⚠️ 文件过大'), 'warn');
+  selectedFile.value = file; parsedText.value = ''; parseStatus.value = 'parsing'; output.value = ''; error.value = '';
 
   if (audioExts.includes(ext)) {
-    parseStatus.value = 'done'; parsedText.value = '__AUDIO__'
-    return showToast(t('🎵 音频就绪: ') + file.name)
+    parseStatus.value = 'done'; parsedText.value = '__AUDIO__';
+    return showToast(t('🎵 音频就绪: ') + file.name);
   }
-  if (imageExts.includes(ext)) return parseImageOCR(file)
+  if (imageExts.includes(ext)) return parseImageOCR(file);
 
   autoParseFile(file).then(res => {
-    parsedText.value = res.text || ''; parseStatus.value = 'done'
-    showToast(t('✅ 解析完成'))
+    parsedText.value = res.text || ''; parseStatus.value = 'done';
+    showToast(t('✅ 解析完成'));
   }).catch(err => {
-    parseStatus.value = 'error'; error.value = err.message
-    showToast(t('❌ 解析失败'), 'error')
-  })
+    parseStatus.value = 'error'; error.value = err.message;
+    showToast(t('❌ 解析失败'), 'error');
+  });
 }
 
 async function parseImageOCR(file) {
   try {
-    const Tesseract = await import('tesseract.js')
-    const { data } = await Tesseract.recognize(file, 'chi_sim+eng', { logger: m => { if (m.status === 'recognizing text') ocrProgress.value = Math.round(m.progress * 100) } })
-    parsedText.value = data.text; parseStatus.value = 'done'; ocrProgress.value = 0
+    const Tesseract = await import('tesseract.js');
+    const { data } = await Tesseract.recognize(file, 'chi_sim+eng', { logger: m => { if (m.status === 'recognizing text') ocrProgress.value = Math.round(m.progress * 100); } });
+    parsedText.value = data.text; parseStatus.value = 'done'; ocrProgress.value = 0;
   } catch (err) {
-    parseStatus.value = 'error'; error.value = err.message
+    parseStatus.value = 'error'; error.value = err.message;
   }
 }
-function removeFile() { selectedFile.value = null; parseStatus.value = ''; if(fileInputRef.value) fileInputRef.value.value = '' }
+function removeFile() { selectedFile.value = null; parseStatus.value = ''; if(fileInputRef.value) fileInputRef.value.value = ''; }
 
 function cancelAnalysis() {
-  currentRequestId++ 
-  loading.value = false
-  showToast(t('⏹ 取消'), 'warn')
+  currentRequestId++;
+  loading.value = false;
+  showToast(t('⏹ 取消'), 'warn');
 }
 
 async function processInput() {
-  if (loading.value) return
+  if (loading.value) return;
   if (inputMode.value === 'file') {
-    if (!selectedFile.value || parseStatus.value !== 'done') return showToast(t('⚠️ 请先上传'), 'warn')
-    return await processFileInput()
+    if (!selectedFile.value || parseStatus.value !== 'done') return showToast(t('⚠️ 请先上传'), 'warn');
+    return await processFileInput();
   } else {
-    const text = userInput.value.trim()
-    if (text.length < 10) return showToast(t('⚠️ 内容过短'), 'warn')
-    await processTextInput(text)
+    const text = userInput.value.trim();
+    if (text.length < 10) return showToast(t('⚠️ 内容过短'), 'warn');
+    await processTextInput(text);
   }
 }
 
 async function processTextInput(text) {
-  loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
-  const reqId = ++currentRequestId 
+  loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now();
+  const reqId = ++currentRequestId;
   try {
-    const result = await callAI(selectedTool.value, text)
-    if (reqId !== currentRequestId) return 
-    output.value = result; elapsedMs.value = Date.now() - startTime.value
-    saveToHistory(selectedTool.value, 'text', text.substring(0, 80) + '...', result)
+    const result = await callAI(selectedTool.value, text);
+    if (reqId !== currentRequestId) return;
+    output.value = result; elapsedMs.value = Date.now() - startTime.value;
+    saveToHistory(selectedTool.value, 'text', text.substring(0, 80) + '...', result);
   } catch (err) { 
-    if (reqId !== currentRequestId) return
-    error.value = err.message 
+    if (reqId !== currentRequestId) return;
+    error.value = err.message;
   } finally { 
-    if (reqId === currentRequestId) loading.value = false 
+    if (reqId === currentRequestId) loading.value = false;
   }
 }
 
 async function processFileInput() {
-  loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now()
-  const reqId = ++currentRequestId 
+  loading.value = true; output.value = ''; error.value = ''; startTime.value = Date.now();
+  const reqId = ++currentRequestId;
   try {
-    let result
-    const ext = selectedFile.value.name.split('.').pop().toLowerCase()
+    let result;
+    const ext = selectedFile.value.name.split('.').pop().toLowerCase();
     if (['wav', 'mp3', 'aac', 'mp4'].includes(ext)) {
-      const { audioToBase64 } = await import('./utils/api.js')
-      const b64 = await audioToBase64(selectedFile.value)
-      if (reqId !== currentRequestId) return
-      result = await callAudioAI(selectedTool.value, b64, selectedFile.value.type || 'audio/mpeg')
+      const { audioToBase64 } = await import('./utils/api.js');
+      const b64 = await audioToBase64(selectedFile.value);
+      if (reqId !== currentRequestId) return;
+      result = await callAudioAI(selectedTool.value, b64, selectedFile.value.type || 'audio/mpeg');
     } else {
-      result = await callAI(selectedTool.value, parsedText.value)
+      result = await callAI(selectedTool.value, parsedText.value);
     }
-    if (reqId !== currentRequestId) return 
-    output.value = result; elapsedMs.value = Date.now() - startTime.value
-    saveToHistory(selectedTool.value, 'file', `[文件] ${selectedFile.value.name}`, result)
+    if (reqId !== currentRequestId) return;
+    output.value = result; elapsedMs.value = Date.now() - startTime.value;
+    saveToHistory(selectedTool.value, 'file', `[文件] ${selectedFile.value.name}`, result);
   } catch (err) { 
-    if (reqId !== currentRequestId) return
-    error.value = err.message 
+    if (reqId !== currentRequestId) return;
+    error.value = err.message;
   } finally { 
-    if (reqId === currentRequestId) loading.value = false 
+    if (reqId === currentRequestId) loading.value = false;
   }
 }
 
-function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
-function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制成功'))) }
+function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example; }
+function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制成功'))); }
 
 async function secureExportToPDF(password) {
-  if (!password) return; isExporting.value = true; const el = document.getElementById('report-content')
+  if (!password) return; isExporting.value = true; const el = document.getElementById('report-content');
   try {
-    const opt = { margin: 0, html2canvas: { scale: 2, useCORS: true, onclone: (doc) => { const e = doc.getElementById('report-content'); e.style.position='static'; e.style.left='0'; e.style.zIndex='99999'; } }, jsPDF: { format: 'a4', orientation: 'portrait' } }
-    const pdfBlob = await html2pdf().set(opt).from(el).toPdf().output('blob')
-    const bytes = await encryptPDFWithPassword(await pdfBlob.arrayBuffer(), password)
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'})); a.download = `Aegis报告_${Date.now()}.pdf`; a.click()
-    showPasswordModal.value = false
-  } catch(e) { showToast('PDF 导出失败', 'error') } finally { isExporting.value = false }
+    const opt = { margin: 0, html2canvas: { scale: 2, useCORS: true, onclone: (doc) => { const e = doc.getElementById('report-content'); e.style.position='static'; e.style.left='0'; e.style.zIndex='99999'; } }, jsPDF: { format: 'a4', orientation: 'portrait' } };
+    const pdfBlob = await html2pdf().set(opt).from(el).toPdf().output('blob');
+    const bytes = await encryptPDFWithPassword(await pdfBlob.arrayBuffer(), password);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'})); a.download = `Aegis报告_${Date.now()}.pdf`; a.click();
+    showPasswordModal.value = false;
+  } catch(e) { showToast('PDF 导出失败', 'error'); } finally { isExporting.value = false; }
 }
 
 onMounted(() => {
-  if (isDark.value) document.documentElement.classList.add('dark')
-  document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='Enter') processInput() })
-  window.addEventListener('mousemove', handlePointerMove)
-  window.addEventListener('touchmove', handlePointerMove, { passive: true })
-  animateBackground()
-})
+  if (isDark.value) document.documentElement.classList.add('dark');
+  document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='Enter') processInput(); });
+  window.addEventListener('mousemove', handlePointerMove);
+  window.addEventListener('touchmove', handlePointerMove, { passive: true });
+  animateBackground();
+});
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', handlePointerMove)
-  window.removeEventListener('touchmove', handlePointerMove)
-  cancelAnimationFrame(animationFrameId)
-})
+  window.removeEventListener('mousemove', handlePointerMove);
+  window.removeEventListener('touchmove', handlePointerMove);
+  cancelAnimationFrame(animationFrameId);
+});
 </script>
 
 <template>
