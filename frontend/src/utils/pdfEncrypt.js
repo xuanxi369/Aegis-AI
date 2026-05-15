@@ -431,8 +431,11 @@ export async function encryptPDFWithPassword(pdfBytes, userPassword) {
   
   // 🌟 核心修复：直接暴力替换原有的 ID，确保哈希计算一致性
   let trailer = pdfStr.substring(trailerIdx, eofIdx);
-  const updatedTrailer = trailer.replace(/\/ID\s*\[\s*<[^>]+>\s*<[^>]+>\s*\]/, '') // 先移除旧 ID
-                                .replace('>>', ` /Encrypt ${objNum} 0 R /ID [(<${fileIdHex}>)(<${fileIdHex}>)] >>`);
+  // Remove old ID - match both [(<hex>)(<hex>)] and [<hex> <hex>] formats
+  let cleanedTrailer = trailer.replace(/\/ID\s*\[\s*(?:\(\s*<[^>]+>\s*\)|<[^>]+>)\s*(?:\(\s*<[^>]+>\s*\)|<[^>]+>)\s*\]/, '');
+  // Insert Encrypt reference and new ID before the last >> (trailer dictionary closing bracket)
+  const lastClosing = cleanedTrailer.lastIndexOf('>>');
+  const updatedTrailer = cleanedTrailer.substring(0, lastClosing) + ` /Encrypt ${objNum} 0 R /ID [(<${fileIdHex}>)(<${fileIdHex}>)] ` + cleanedTrailer.substring(lastClosing);
 
   const finalStr = pdfStr.substring(0, trailerIdx) + encryptDict + updatedTrailer + pdfStr.substring(eofIdx);
   const finalBytes = new Uint8Array(finalStr.length);

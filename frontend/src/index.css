@@ -154,7 +154,7 @@ body {
 .loading-dots span:nth-child(3) { background: #ec4899; animation-delay: 0.4s; }
 @keyframes pulse { 0%, 100% { transform: scale(0.6); opacity: 0.4; } 50% { transform: scale(1); opacity: 1; } }
 
-.pdf-export-area { position: fixed; top: 0; left: 0; width: 794px; z-index: -9999; background: #ffffff; pointer-events: none; }
+.pdf-export-area { position: fixed; top: 0; left: -9999px; width: 794px; background: #ffffff; pointer-events: none; }
 .pdf-export-area * { color: #000000 !important; }
 
 /* ==========================================

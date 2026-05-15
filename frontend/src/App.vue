@@ -79,6 +79,8 @@ const tools = computed(() => {
 
 const currentTool = computed(() => selectedTool.value ? tools.value.find(t => t.id === selectedTool.value) : null)
 
+const isFileOnlyTool = computed(() => currentTool.value?.inputType === 'file')
+
 const renderedOutput = computed(() => {
   if (!output.value) return ''
   if (selectedTool.value === 'finance_audit') {
@@ -255,7 +257,7 @@ function clearHistory() { localStorage.removeItem(`ag_${selectedTool.value}`); h
 async function secureExportToPDF(password) {
   if (!password) return; isExporting.value = true; const el = document.getElementById('report-content')
   try {
-    const opt = { margin: 0, html2canvas: { scale: 2, useCORS: true, onclone: (doc) => { const e = doc.getElementById('report-content'); e.style.position='static'; e.style.left='0'; } }, jsPDF: { format: 'a4', orientation: 'portrait' } }
+    const opt = { margin: 0, html2canvas: { scale: 2, useCORS: true, onclone: (doc) => { const e = doc.getElementById('report-content'); e.style.position='static'; e.style.left='0'; e.style.zIndex='99999'; } }, jsPDF: { format: 'a4', orientation: 'portrait' } }
     const pdfBlob = await html2pdf().set(opt).from(el).toPdf().output('blob')
     const bytes = await encryptPDFWithPassword(await pdfBlob.arrayBuffer(), password)
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'})); a.download = `Aegis报告_${Date.now()}.pdf`; a.click()
@@ -336,7 +338,7 @@ onUnmounted(() => {
             {{ t('智驭未来职场') }} <br/> 
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
-          <h3 style="color: #000000;">✨面向传统企业文职人员的智能办公平台</h3>
+          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('面向传统企业文职人员的智能办公平台') }}</h3>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
             {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
@@ -345,18 +347,42 @@ onUnmounted(() => {
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
           <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2">{{ t('欢迎回来，探索Aegis') }}</h2>
-          <p class="text-base text-slate-500 dark:text-slate-400 mb-10">{{ t('选择一个专属配置的 Agent 开始您的工作') }}</p>
+          <p class="text-base text-slate-500 dark:text-slate-400 mb-14">{{ t('选择一个专属配置的 Agent 开始您的工作') }}</p>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div v-for="tool in tools" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
-              <div class="w-14 h-14 rounded-[1.25rem] bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-3xl mb-6 border border-white dark:border-slate-700 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
-              
-              <h3 class="text-xl font-black text-slate-800 dark:text-white mb-3">{{ tool.displayName }}</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10 overflow-hidden">{{ tool.displayDesc }}</p>
-              
-              <div class="flex justify-between items-center text-sm font-bold">
-                <span class="text-blue-500 group-hover:text-pink-500 transition-colors">{{ t('开始使用') }} ↗</span>
-                <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
+          <!-- 核心模块组 -->
+          <div class="mb-14">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-1.5 h-6 rounded-full bg-gradient-to-b from-blue-500 to-purple-500"></div>
+              <span class="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Core Modules</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div v-for="tool in tools.slice(0, 3)" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
+                <div class="w-14 h-14 rounded-[1.25rem] bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-3xl mb-6 border border-white dark:border-slate-700 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
+                <h3 class="text-xl font-black text-slate-800 dark:text-white mb-3">{{ tool.displayName }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10 overflow-hidden">{{ tool.displayDesc }}</p>
+                <div class="flex justify-between items-center text-sm font-bold">
+                  <span class="text-blue-500 group-hover:text-pink-500 transition-colors">{{ t('开始使用') }} ↗</span>
+                  <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 扩展模块组 -->
+          <div>
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-1.5 h-6 rounded-full bg-gradient-to-b from-emerald-500 to-cyan-500"></div>
+              <span class="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Extended Modules</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div v-for="tool in tools.slice(3, 6)" :key="tool.id" @click="openTool(tool.id)" class="glass-card cursor-pointer p-8 group rounded-[2rem]">
+                <div class="w-14 h-14 rounded-[1.25rem] bg-white/80 dark:bg-slate-800 shadow-sm flex items-center justify-center text-3xl mb-6 border border-white dark:border-slate-700 group-hover:scale-110 transition-transform">{{ tool.icon }}</div>
+                <h3 class="text-xl font-black text-slate-800 dark:text-white mb-3">{{ tool.displayName }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10 overflow-hidden">{{ tool.displayDesc }}</p>
+                <div class="flex justify-between items-center text-sm font-bold">
+                  <span class="text-emerald-500 group-hover:text-cyan-500 transition-colors">{{ t('开始使用') }} ↗</span>
+                  <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -400,7 +426,7 @@ onUnmounted(() => {
                   <button v-if="inputMode === 'text'" @click="fillExample" class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition">{{ t('示例') }}</button>
                 </div>
 
-                <div class="flex p-1.5 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-white/80 dark:border-slate-700 shadow-inner">
+                <div v-if="!isFileOnlyTool" class="flex p-1.5 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-white/80 dark:border-slate-700 shadow-inner">
                   <button @click="inputMode='text'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='text'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('段落描述分析') }}</button>
                   <button @click="inputMode='file'" :class="['flex-1 py-3 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2', inputMode==='file'?'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-100 dark:border-slate-600':'text-slate-500']">{{ t('上传文件解析') }}</button>
                 </div>
@@ -487,8 +513,8 @@ onUnmounted(() => {
         <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl p-8 rounded-[2rem] border border-white dark:border-slate-700 shadow-2xl w-full max-w-md text-center">
           <div class="w-16 h-16 bg-blue-50 dark:bg-slate-900 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5">🔒</div>
           <h3 class="text-xl font-black text-slate-800 dark:text-white mb-2">{{ t('安全导出设定') }}</h3>
-          <p class="text-sm text-slate-500 mb-6">为保护企业敏感数据，请设置查看密码</p>
-          <input v-model="pdfPassword" type="password" placeholder="输入文档密码" class="glass-input mb-6 bg-slate-50 dark:bg-slate-900 focus:bg-white !text-base !rounded-xl" autofocus />
+          <p class="text-sm text-slate-500 mb-6">{{ t('为保护企业敏感数据，请设置查看密码') }}</p>
+          <input v-model="pdfPassword" type="password" :placeholder="t('输入文档密码')" class="glass-input mb-6 bg-slate-50 dark:bg-slate-900 focus:bg-white !text-base !rounded-xl" autofocus />
           <div class="flex gap-3">
             <button @click="showPasswordModal = false" class="flex-1 py-3 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-base">{{ t('取消') }}</button>
             <button @click="secureExportToPDF(pdfPassword)" :disabled="isExporting" class="flex-1 py-3 rounded-full bg-blue-600 text-white font-bold text-base shadow-lg shadow-blue-500/30">
