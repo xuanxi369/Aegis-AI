@@ -266,6 +266,275 @@ function handleFile(file) {
   const ext = file.name.split('.').pop().toLowerCase()
   const audioExts = ['wav', 'flac', 'ape', 'mp3', 'aac', 'wma', 'aiff', 'mp4']
   const imageExts = ['jpg', 'jpeg', 'png']
+  const limit = audioExts.includes(ext)```vue
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { marked } from 'marked'
+import html2pdf from 'html2pdf.js'
+import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
+import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js'
+import { dictionary } from './utils/i18n.js' 
+
+marked.setOptions({ breaks: true, gfm: true })
+
+// ── 核心响应式语言逻辑 ────────────────────
+const currentLang = ref(localStorage.getItem('aegis_lang') || 'zh-CN')
+
+function t(text) {
+  if (!text) return ''
+  if (currentLang.value === 'zh-CN') return text
+  return dictionary[currentLang.value]?.[text] || text
+}
+
+function changeLang(event) {
+  const lang = event.target.value
+  currentLang.value = lang
+  localStorage.setItem('aegis_lang', lang)
+}
+
+// ── 视图与日夜切换 ─────────────────────────
+// currentView: 'landing' | 'dashboard' | 'tool_select' | 'tool_text' | 'tool_file'
+const currentView = ref('landing')
+const selectedTool = ref(null)
+const isOutputExpanded = ref(false)
+const inputMode = ref('text') 
+const isDark = ref(localStorage.getItem('aegis_theme') === 'dark')
+
+function toggleTheme() {
+  isDark.value = !isDark.value
+  const mode = isDark.value ? 'dark' : 'light'
+  document.documentElement.classList.toggle('dark', isDark.value)
+  localStorage.setItem('aegis_theme', mode)
+}
+
+// ── 动态交互背景 ─────────────────────────
+const targetX = ref(0), targetY = ref(0), currentX = ref(0), currentY = ref(0)
+let animationFrameId = null
+
+function handlePointerMove(e) {
+  const x = e.touches ? e.touches[0].clientX : e.clientX
+  const y = e.touches ? e.touches[0].clientY : e.clientY
+  targetX.value = x - window.innerWidth / 2
+  targetY.value = y - window.innerHeight / 2
+}
+
+function animateBackground() {
+  currentX.value += (targetX.value - currentX.value) * 0.05
+  currentY.value += (targetY.value - currentY.value) * 0.05
+  animationFrameId = requestAnimationFrame(animateBackground)
+}
+
+// ── 工作区逻辑 ──────────────────────────
+const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
+const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
+const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false)
+const showPasswordModal = ref(false), pdfPassword = ref(''), isExporting = ref(false)
+let currentRequestId = 0 
+const startTime = ref(0)
+
+// 独立历史记录库
+const historyText = ref([])
+const historyFile = ref([])
+
+// 综合历史记录（选择页使用）
+const combinedHistoryList = computed(() => {
+  return [...historyText.value, ...historyFile.value].sort((a, b) => b.id - a.id)
+})
+
+// 单一模式历史记录（工作页使用）
+const historyList = computed(() => {
+  return inputMode.value === 'text' ? historyText.value : historyFile.value
+})
+
+const exportDate = computed(() => {
+  const d = new Date()
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`
+})
+
+// 核心修复：强制注入响应式依赖，并在前端拦截重写模块配置
+const tools = computed(() => {
+  const lang = currentLang.value; // 强制 Vue 收集依赖
+  return Object.values(TOOLS_CONFIG).map(tool => {
+    
+    // 初始化自定义配置
+    let customInputType = tool.inputType;
+    let customExample = tool.example;
+
+    // 针对后三个模块进行配置拦截重写
+    if (tool.id === 'hr_resume') {
+      customInputType = 'text'; // 强制改为 text，开启双模式
+      customExample = `基本信息：张某某，男，8年工作经验\n求职意向：高级产品经理/产品总监\n\n【核心经历】\n2021.05 - 至今 | 某出海互联网公司 | 产品总监\n- 负责公司核心社交产品从0到1的搭建，带领15人产研团队。\n- 期间日活突破100万，但由于公司资金链问题，近期准备看机会。\n\n2018.03 - 2021.04 | 某一线大厂 | 高级产品经理\n- 负责电商核心交易链路重构，提升转化率约 15%。\n- 参与多次大促活动，具有极强的抗压能力。\n\n【自我评价】\n逻辑清晰，对数据高度敏感。能快速适应高压环境，执行力强，但有时对团队细节管理偏于严苛。`;
+    } else if (tool.id === 'finance_audit') {
+      customInputType = 'text'; // 强制改为 text，开启双模式
+      customExample = `报销单号：EX-2026-0515\n申请人：李四 (大客户销售部)\n申请日期：2026-05-02\n\n【报销明细】\n1. 4月30日 差旅机票：¥1,500 (符合标准出差审批)\n2. 5月01日 客户招待费：¥5,000 (备注：均为五一假期当天开具的连号餐饮发票，且金额为整数)\n3. 5月02日 办公用品采购：¥3,800 (备注：购买电子设备，但未见财务资产库入库单，且为节假日发生)\n4. 5月03日 市内交通费：¥800 (备注：全为出租车定额发票)`;
+    } else if (tool.id === 'ocr_corrector') {
+      customInputType = 'file'; // 最后一个模块保持纯文件模式
+    }
+
+    return {
+      ...tool,
+      inputType: customInputType,
+      example: customExample || tool.example,
+      displayName: t(tool.name),
+      displayDesc: t(tool.description)
+    }
+  })
+})
+
+const currentTool = computed(() => selectedTool.value ? tools.value.find(t => t.id === selectedTool.value) : null)
+
+const renderedOutput = computed(() => {
+  if (!output.value) return ''
+  if (selectedTool.value === 'finance_audit') {
+    try { return renderFinanceJSON(JSON.parse(output.value)) } 
+    catch { return marked.parse(output.value) }
+  }
+  return marked.parse(output.value)
+})
+
+const toast = ref({ show: false, message: '', type: 'success' })
+let toastTimer = null
+function showToast(msg, type = 'success') {
+  clearTimeout(toastTimer)
+  toast.value = { show: true, message: msg, type }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
+}
+
+// ── 页面路由与跳转逻辑 ──────────────────────────
+
+function openTool(toolId) {
+  selectedTool.value = toolId
+  resetWorkspace()
+  loadHistory(toolId)
+  
+  if (toolId === 'ocr_corrector') {
+    // 图片音频识别：跳过选择页，直达文件页
+    inputMode.value = 'file'
+    currentView.value = 'tool_file'
+  } else {
+    // 其他功能：进入选择分发页
+    currentView.value = 'tool_select'
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function openMode(mode) {
+  resetWorkspace()
+  inputMode.value = mode
+  currentView.value = mode === 'text' ? 'tool_text' : 'tool_file'
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function goBack() {
+  if (currentView.value === 'tool_select' || selectedTool.value === 'ocr_corrector') {
+    currentView.value = 'dashboard'
+    selectedTool.value = null
+  } else {
+    // 从具体功能页返回选择页
+    currentView.value = 'tool_select'
+    resetWorkspace()
+    loadHistory(selectedTool.value) 
+  }
+}
+
+function goBackToDashboard() {
+  currentView.value = 'dashboard'
+  selectedTool.value = null
+  isOutputExpanded.value = false 
+  showHistory.value = false
+  resetWorkspace()
+}
+
+function resetWorkspace() {
+  output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0
+  showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0
+  currentRequestId++ 
+}
+
+// ── 数据历史隔离与保存 ──────────────────────────
+
+function saveToHistory(t_id, mode, i, r) {
+  const k = `ag_${t_id}_${mode}`;
+  try { 
+    const h = JSON.parse(localStorage.getItem(k)||'[]'); 
+    h.unshift({id: Date.now(), input: i, output: r, mode: mode}); 
+    localStorage.setItem(k, JSON.stringify(h.slice(0,20)));
+    if(mode === 'text') historyText.value = h.slice(0,20);
+    else historyFile.value = h.slice(0,20);
+  } catch(e){} 
+}
+
+function loadHistory(t_id) {
+  try { historyText.value = JSON.parse(localStorage.getItem(`ag_${t_id}_text`)||'[]') } catch{ historyText.value = [] }
+  try { historyFile.value = JSON.parse(localStorage.getItem(`ag_${t_id}_file`)||'[]') } catch{ historyFile.value = [] }
+}
+
+function loadHistoryItem(item) {
+  inputMode.value = item.mode
+  currentView.value = item.mode === 'text' ? 'tool_text' : 'tool_file'
+  userInput.value = item.mode === 'text' ? item.input : ''
+  output.value = item.output
+  showHistory.value = false
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function clearCurrentHistory() { 
+  localStorage.removeItem(`ag_${selectedTool.value}_${inputMode.value}`); 
+  if (inputMode.value === 'text') historyText.value = [];
+  else historyFile.value = [];
+  showHistory.value = false; 
+  showToast(t('历史记录已清空')) 
+}
+
+function clearCombinedHistory() {
+  localStorage.removeItem(`ag_${selectedTool.value}_text`); 
+  localStorage.removeItem(`ag_${selectedTool.value}_file`); 
+  historyText.value = []; historyFile.value = [];
+  showToast(t('历史记录已清空')) 
+}
+
+function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  return `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function renderFinanceJSON(json) {
+  const score = json.risk_score ?? 0
+  const scoreColor = score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : '#EF4444'
+  let html = `<div class="bg-white/50 dark:bg-slate-800/50 rounded-3xl p-6 border border-white/60 dark:border-slate-700">`
+  html += `<div class="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">`
+  html += `<h3 class="text-xl font-bold text-slate-800 dark:text-white m-0">📄 ${json.document_type || t('财务单据')}</h3>`
+  html += `<span class="px-4 py-1.5 rounded-full text-sm font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">${json.audit_status}</span>`
+  html += `</div>`
+  
+  html += `<div class="mb-6"><p class="text-sm text-slate-500 mb-2">${t('综合风险评分')}</p>`
+  html += `<div class="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div style="width:${score}%;background:${scoreColor}" class="h-full rounded-full transition-all"></div></div>`
+  html += `</div>`
+
+  if (json.anomaly_detection?.length) {
+    html += `<div class="space-y-3">`
+    json.anomaly_detection.forEach(a => {
+      html += `<div class="bg-white/80 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">`
+      html += `<div class="font-semibold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><span class="w-2 h-2 rounded-full ${a.severity==='High'?'bg-red-500':'bg-yellow-500'}"></span>${a.issue}</div>`
+      if(a.remediation) html += `<div class="text-sm text-slate-600 dark:text-slate-400 mt-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">${a.remediation}</div>`
+      html += `</div>`
+    })
+    html += `</div>`
+  }
+  html += `</div>`
+  return html
+}
+
+function onFileSelect(e) { const f = e.target.files?.[0]; if (f) handleFile(f) }
+function onDrop(e) { e.preventDefault(); isDragOver.value = false; const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }
+function onDragOver(e) { e.preventDefault(); isDragOver.value = true }
+function onDragLeave() { isDragOver.value = false }
+
+function handleFile(file) {
+  const MAX_DOC = 20 * 1024 * 1024, MAX_AUDIO = 10 * 1024 * 1024, MAX_IMG = 10 * 1024 * 1024
+  const ext = file.name.split('.').pop().toLowerCase()
+  const audioExts = ['wav', 'flac', 'ape', 'mp3', 'aac', 'wma', 'aiff', 'mp4']
+  const imageExts = ['jpg', 'jpeg', 'png']
   const limit = audioExts.includes(ext) ? MAX_AUDIO : imageExts.includes(ext) ? MAX_IMG : MAX_DOC
 
   if (file.size > limit) return showToast(t('⚠️ 文件过大'), 'warn')
@@ -322,7 +591,7 @@ async function processTextInput(text) {
     const result = await callAI(selectedTool.value, text)
     if (reqId !== currentRequestId) return 
     output.value = result; elapsedMs.value = Date.now() - startTime.value
-    saveToHistory(selectedTool.value, 'text', text.substring(0, 50), result)
+    saveToHistory(selectedTool.value, 'text', text.substring(0, 80) + '...', result)
   } catch (err) { 
     if (reqId !== currentRequestId) return
     error.value = err.message 
@@ -406,14 +675,13 @@ onUnmounted(() => {
       <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div class="flex items-center gap-3 cursor-pointer group" @click="goBackToDashboard">
           <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-110 transition">A</div>
-          <span class="text-xl font-black tracking-tight dark:text-white">Aegis AI</span>
+          <span class="text-xl font-black tracking-tight dark:text-white">Aegis Hub</span>
         </div>
         
         <div class="flex items-center gap-4">
           <button @click="toggleTheme" class="w-9 h-9 rounded-full bg-white/60 dark:bg-slate-800 border border-white dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-110 transition text-lg">
             {{ isDark ? '🌙' : '☀️' }}
           </button>
-          
           <select :value="currentLang" @change="changeLang" class="glass-input !py-1.5 !px-4 !w-auto !rounded-full !text-sm font-bold cursor-pointer dark:bg-slate-800 outline-none">
             <option value="zh-CN">简体中文</option>
             <option value="zh-TW">繁體中文</option>
@@ -422,10 +690,6 @@ onUnmounted(() => {
             <option value="ko">한국어</option>
             <option value="de">Deutsch</option>
           </select>
-
-          <button v-if="currentView !== 'landing' && currentView !== 'dashboard'" @click="goBackToDashboard" class="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors ml-2">
-            {{ t('返回大厅') }}
-          </button>
         </div>
       </div>
     </header>
@@ -438,14 +702,11 @@ onUnmounted(() => {
             <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
             {{ t('IIEAO · 企业效能引擎') }}
           </div>
-          
           <h1 class="text-5xl md:text-[5.5rem] font-black text-slate-800 dark:text-white tracking-tight leading-tight mb-8">
             {{ t('数智赋能职场') }} <br/> 
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
           <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('✨面向传统企业文职人员的智能办公平台') }}</h3>
-          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('注意：PDF导出功能目前已暂停服务，还请谅解') }}</h3>
-          
           <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
             {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
           </button>
@@ -453,7 +714,7 @@ onUnmounted(() => {
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
           <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2">{{ t('欢迎回来，探索Aegis') }}</h2>
-          <p class="text-base text-slate-500 dark:text-slate-400 mb-14">{{ t('选择一个专属配置的 Agent 开始您的工作') }}<br/>{{ t('法律声明：本站采用无服务器架构部署，您的数据仅在本地解构分析，不存在泄漏风险') }}</p> 
+          <p class="text-base text-slate-500 dark:text-slate-400 mb-14">{{ t('选择一个专属配置的 Agent 开始您的工作') }}</p> 
           
           <div class="mb-14">
             <div class="flex items-center gap-3 mb-6">
@@ -467,7 +728,6 @@ onUnmounted(() => {
                 <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10 overflow-hidden">{{ tool.displayDesc }}</p>
                 <div class="flex justify-between items-center text-sm font-bold">
                   <span class="text-blue-500 group-hover:text-pink-500 transition-colors">{{ t('开始使用') }} ↗</span>
-                  <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ t('全模式支持') }}</span>
                 </div>
               </div>
             </div>
@@ -485,7 +745,6 @@ onUnmounted(() => {
                 <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-10 overflow-hidden">{{ tool.displayDesc }}</p>
                 <div class="flex justify-between items-center text-sm font-bold">
                   <span class="text-emerald-500 group-hover:text-cyan-500 transition-colors">{{ t('开始使用') }} ↗</span>
-                  <span class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-500 dark:text-slate-300">{{ tool.inputType === 'file' ? t('纯文件模式') : t('全模式支持') }}</span>
                 </div>
               </div>
             </div>
@@ -493,45 +752,65 @@ onUnmounted(() => {
         </div>
 
         <div v-else-if="currentView === 'tool_select'">
-          <div class="glass-panel p-8 md:p-10 rounded-[2.5rem]">
-            
-            <div class="flex flex-col justify-between items-start mb-10 border-b border-slate-200 dark:border-slate-800 pb-8 gap-6">
-              <div class="flex items-center gap-5">
-                <div class="text-4xl p-4 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-700">{{ currentTool.icon }}</div>
+          <div class="flex items-center gap-3 mb-10 text-sm font-medium">
+            <button @click="goBackToDashboard" class="text-slate-400 hover:text-blue-500 transition">{{ t('工作台') }}</button>
+            <span class="text-slate-300 dark:text-slate-600">/</span>
+            <span class="text-slate-800 dark:text-slate-200 font-bold">{{ currentTool.displayName }}</span>
+          </div>
+
+          <div class="glass-panel p-10 md:p-12 rounded-[2rem]">
+            <div class="flex flex-col md:flex-row justify-between items-start mb-12 border-b border-slate-200 dark:border-slate-800 pb-10 gap-6">
+              <div class="flex items-center gap-6">
+                <div class="text-5xl p-5 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700">{{ currentTool.icon }}</div>
                 <div>
-                  <h2 class="text-3xl font-black text-slate-800 dark:text-white leading-tight">{{ currentTool.displayName }}</h2>
+                  <h2 class="text-4xl font-black text-slate-800 dark:text-white leading-tight">{{ currentTool.displayName }}</h2>
                   <p class="text-base text-slate-500 mt-2">{{ currentTool.displayDesc }}</p>
                 </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-              <div @click="openMode('text')" class="glass-card cursor-pointer p-8 group rounded-[2rem] text-center flex flex-col items-center justify-center min-h-[200px]">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">✍️</div>
-                <h3 class="text-xl font-black text-slate-800 dark:text-white mb-2">{{ t('段落描述分析') }}</h3>
-                <p class="text-sm text-slate-500">{{ t('输入或粘贴文本片段进行智能结构化解析') }}</p>
-              </div>
-              <div @click="openMode('file')" class="glass-card cursor-pointer p-8 group rounded-[2rem] text-center flex flex-col items-center justify-center min-h-[200px]">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">📄</div>
-                <h3 class="text-xl font-black text-slate-800 dark:text-white mb-2">{{ t('上传文件解析') }}</h3>
-                <p class="text-sm text-slate-500">{{ t('支持多种格式文档上传扫描提取核心数据') }}</p>
+            <div class="mb-14">
+              <h3 class="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-6">{{ t('选择处理模式') }}</h3>
+              <div class="flex border border-slate-100 dark:border-slate-700 rounded-3xl overflow-hidden shadow-inner bg-slate-50 dark:bg-slate-900/50">
+                <button @click="openMode('text')" class="flex-1 p-8 text-left hover:bg-white dark:hover:bg-slate-800 group transition-all duration-300 border-r border-slate-100 dark:border-slate-700 relative">
+                  <div class="text-3xl mb-4 text-blue-500 group-hover:scale-110 transition-transform">✍️</div>
+                  <h4 class="text-lg font-bold text-slate-800 dark:text-white mb-2">{{ t('段落描述分析') }}</h4>
+                  <p class="text-xs text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400 leading-relaxed">{{ t('输入或粘贴文本片段进行智能结构化解析') }}</p>
+                  <span class="absolute right-6 top-1/2 -translate-y-1/2 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button @click="openMode('file')" class="flex-1 p-8 text-left hover:bg-white dark:hover:bg-slate-800 group transition-all duration-300 relative">
+                  <div class="text-3xl mb-4 text-emerald-500 group-hover:scale-110 transition-transform">📄</div>
+                  <h4 class="text-lg font-bold text-slate-800 dark:text-white mb-2">{{ t('上传文件解析') }}</h4>
+                  <p class="text-xs text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400 leading-relaxed">{{ t('支持多种格式文档上传扫描提取核心数据') }}</p>
+                  <span class="absolute right-6 top-1/2 -translate-y-1/2 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
               </div>
             </div>
 
-            <div class="p-6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] shadow-xl">
-              <div class="flex justify-between items-center mb-5">
-                <h4 class="text-lg font-black text-slate-800 dark:text-white">✨ {{ t('综合处理历史') }}</h4>
-                <button v-if="combinedHistoryList.length > 0" @click="clearCombinedHistory" class="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/30 px-4 py-1.5 rounded-full transition">{{ t('清空历史') }}</button>
+            <div class="p-8 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white dark:border-slate-700 rounded-3xl shadow-lg">
+              <div class="flex justify-between items-center mb-6">
+                <h4 class="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+                  ✨ {{ t('综合处理历史') }}
+                </h4>
+                <button v-if="combinedHistoryList.length > 0" @click="clearCombinedHistory" class="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/30 px-4 py-1.5 rounded-full transition">{{ t('清空记录') }}</button>
               </div>
-              <div v-if="combinedHistoryList.length === 0" class="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 text-sm">{{ t('暂无历史记录') }}</div>
-              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                <div v-for="h in combinedHistoryList" :key="h.id" @click="loadHistoryItem(h)" class="p-5 hover:bg-white dark:hover:bg-slate-700 cursor-pointer rounded-2xl border border-slate-100 dark:border-slate-600 transition-all duration-300 group relative">
-                  <div class="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full" :class="h.mode === 'text' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-400'">
-                    {{ h.mode === 'text' ? '描述分析' : '上传分析' }}
+
+              <div v-if="combinedHistoryList.length === 0" class="py-12 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 text-sm font-medium bg-slate-50/50 dark:bg-slate-800/30">
+                {{ t('暂无历史记录') }}
+              </div>
+              
+              <div v-else class="space-y-4 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
+                <div v-for="h in combinedHistoryList" :key="h.id" @click="loadHistoryItem(h)" class="flex items-center justify-between p-5 bg-white/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition group">
+                  <div class="flex flex-col flex-1 min-w-0 pr-6">
+                    <div class="flex items-center gap-3 mb-2">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border" :class="h.mode === 'text' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800' : 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800'">
+                        {{ h.mode === 'text' ? 'Text' : 'File' }}
+                      </span>
+                      <span class="text-xs text-slate-400">{{ formatDate(h.id) }}</span>
+                    </div>
+                    <div class="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{{ h.input }}</div>
                   </div>
-                  <div class="text-xs text-slate-400 mb-2">{{ formatDate(h.id) }}</div>
-                  <div class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2 mb-3">{{ h.input }}</div>
-                  <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition font-bold text-xs">{{ t('载入此记录 →') }}</span>
+                  <span class="text-slate-300 group-hover:text-slate-600 dark:group-hover:text-white transition">→</span>
                 </div>
               </div>
             </div>
@@ -540,20 +819,20 @@ onUnmounted(() => {
         </div>
 
         <div v-else-if="currentView === 'tool_text' || currentView === 'tool_file'">
+          <div class="flex items-center gap-3 mb-10 text-sm font-medium">
+            <button @click="goBackToDashboard" class="text-slate-400 hover:text-blue-500 transition">{{ t('工作台') }}</button>
+            <span class="text-slate-300 dark:text-slate-600">/</span>
+            <button @click="goBack" class="text-slate-400 hover:text-blue-500 transition">{{ currentTool.displayName }}</button>
+            <span class="text-slate-300 dark:text-slate-600">/</span>
+            <span class="text-slate-800 dark:text-slate-200 font-bold">{{ inputMode === 'text' ? t('段落描述分析') : t('上传文件解析') }}</span>
+          </div>
+
           <div class="glass-panel p-8 md:p-10 rounded-[2.5rem]">
-            
             <div class="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-slate-200 dark:border-slate-800 pb-8 gap-6">
               <div class="flex items-center gap-5">
-                <div class="text-4xl p-4 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer hover:scale-105 transition" @click="goBack" title="返回上一级">
-                  {{ currentTool.icon }}
-                </div>
+                <div class="text-4xl p-4 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-700">{{ currentTool.icon }}</div>
                 <div>
-                  <div class="flex items-center gap-3">
-                    <h2 class="text-3xl font-black text-slate-800 dark:text-white leading-tight">{{ currentTool.displayName }}</h2>
-                    <span class="px-3 py-1 bg-gradient-to-r from-blue-500 to-pink-500 text-white rounded-full text-xs font-bold shadow-sm">
-                      {{ inputMode === 'text' ? '描述模式' : '文件模式' }}
-                    </span>
-                  </div>
+                  <h2 class="text-3xl font-black text-slate-800 dark:text-white leading-tight">{{ currentTool.displayName }}</h2>
                   <p class="text-base text-slate-500 mt-2">{{ currentTool.displayDesc }}</p>
                 </div>
               </div>
@@ -571,7 +850,6 @@ onUnmounted(() => {
                 <div v-if="historyList.length === 0" class="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 text-sm">{{ t('暂无历史记录') }}</div>
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                   <div v-for="h in historyList" :key="h.id" @click="loadHistoryItem(h)" class="p-5 hover:bg-white dark:hover:bg-slate-700 cursor-pointer rounded-2xl border border-slate-100 dark:border-slate-600 transition-all duration-300 group">
-                    <div class="text-xs text-slate-400 mb-2">{{ formatDate(h.id) }}</div>
                     <div class="text-sm text-slate-700 dark:text-slate-300 line-clamp-3 mb-3">{{ h.input }}</div>
                     <span class="text-blue-500 opacity-0 group-hover:opacity-100 transition font-bold text-xs">{{ t('载入此记录 →') }}</span>
                   </div>
@@ -580,7 +858,6 @@ onUnmounted(() => {
             </transition>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-              
               <div class="lg:col-span-5 flex flex-col gap-6">
                 <div class="flex justify-between items-center">
                   <h3 class="text-lg font-black text-slate-800 dark:text-white">{{ t('提供分析内容') }}</h3>
