@@ -515,7 +515,7 @@ onUnmounted(() => {
                   <p class="text-xs text-slate-500">{{ t('输入或粘贴文本片段进行智能结构化解析') }}</p>
                 </div>
                 <div @click="openMode('file')" class="bg-white/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 p-8 rounded-3xl cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-300 group">
-                  <div class="text-3xl mb-4 group-hover:scale-110 transition-transform origin-left">🌊</div>
+                  <div class="text-3xl mb-4 group-hover:scale-110 transition-transform origin-left">⇅</div>
                   <h4 class="text-xl font-bold text-slate-800 dark:text-white mb-2">{{ t('上传文件解析') }}</h4>
                   <p class="text-xs text-slate-500">{{ t('支持多种格式文档上传扫描提取核心数据') }}</p>
                 </div>
