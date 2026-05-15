@@ -510,12 +510,12 @@ onUnmounted(() => {
               <h3 class="text-sm font-medium text-slate-400 mb-5">{{ t('选择处理模式') }}</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div @click="openMode('text')" class="bg-white/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 p-8 rounded-3xl cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-300 group">
-                  <div class="text-3xl mb-4 group-hover:scale-110 transition-transform origin-left">✍️</div>
+                  <div class="text-3xl mb-4 group-hover:scale-110 transition-transform origin-left">✑</div>
                   <h4 class="text-xl font-bold text-slate-800 dark:text-white mb-2">{{ t('段落描述分析') }}</h4>
                   <p class="text-xs text-slate-500">{{ t('输入或粘贴文本片段进行智能结构化解析') }}</p>
                 </div>
                 <div @click="openMode('file')" class="bg-white/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 p-8 rounded-3xl cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-300 group">
-                  <div class="text-3xl mb-4 group-hover:scale-110 transition-transform origin-left">📄</div>
+                  <div class="text-3xl mb-4 group-hover:scale-110 transition-transform origin-left">🗂</div>
                   <h4 class="text-xl font-bold text-slate-800 dark:text-white mb-2">{{ t('上传文件解析') }}</h4>
                   <p class="text-xs text-slate-500">{{ t('支持多种格式文档上传扫描提取核心数据') }}</p>
                 </div>
@@ -524,7 +524,7 @@ onUnmounted(() => {
 
             <div class="bg-white/60 dark:bg-slate-800/50 border border-white dark:border-slate-700 rounded-3xl p-8">
               <div class="flex justify-between items-center mb-6">
-                <h4 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">✨ {{ t('综合处理历史') }}</h4>
+                <h4 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">{{ t('综合历史记录') }}</h4>
                 <button v-if="combinedHistoryList.length > 0" @click="clearCombinedHistory" class="px-4 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-500 font-bold text-xs rounded-full hover:bg-red-100 transition">{{ t('清空记录') }}</button>
               </div>
 
@@ -555,7 +555,7 @@ onUnmounted(() => {
             <span class="mx-1">/</span>
             <span @click="goBack" class="cursor-pointer hover:text-blue-500 transition">{{ currentTool.displayName }}</span>
             <span class="mx-1">/</span>
-            <span class="text-slate-800 dark:text-slate-200 font-bold">{{ inputMode === 'text' ? t('段落描述分析') : t('上传文件解析') }}</span>
+            <span class="text-slate-800 dark:text-slate-200 font-bold">{{ inputMode === 'text' ? t('语句段落分析') : t('上传文件解析') }}</span>
           </div>
 
           <div class="glass-panel p-8 md:p-10 rounded-[2.5rem]">
@@ -568,14 +568,14 @@ onUnmounted(() => {
                 </div>
               </div>
               <button @click="showHistory = !showHistory" class="px-6 py-2.5 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-full font-bold text-sm shadow-sm border border-blue-100 dark:border-slate-700 transition hover:bg-blue-100">
-                {{ t('📂 本页记录') }} ({{ historyList.length }})
+                {{ t('📁 本页记录') }} ({{ historyList.length }})
               </button>
             </div>
 
             <transition name="fade">
               <div v-if="showHistory" class="mb-10 p-6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] shadow-xl">
                 <div class="flex justify-between items-center mb-5">
-                  <h4 class="text-lg font-black text-slate-800 dark:text-white">{{ inputMode === 'text' ? t('描述分析历史') : t('文件分析历史') }}</h4>
+                  <h4 class="text-lg font-black text-slate-800 dark:text-white">{{ inputMode === 'text' ? t('段落分析历史') : t('文件解析历史') }}</h4>
                   <button v-if="historyList.length > 0" @click="clearCurrentHistory" class="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/30 px-4 py-1.5 rounded-full transition">{{ t('清空记录') }}</button>
                 </div>
                 <div v-if="historyList.length === 0" class="py-8 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 text-sm">{{ t('暂无历史记录') }}</div>
@@ -614,7 +614,7 @@ onUnmounted(() => {
 
                 <div class="flex gap-3">
                   <button v-if="!loading" @click="processInput" :disabled="inputMode === 'file' ? parseStatus!=='done' : !userInput" class="btn-fluid flex-1 py-4 text-lg font-bold">
-                    {{ t('立即执行 Aegis 分析') }}
+                    {{ t('执行 Aegis 分析') }}
                   </button>
                   <div v-else class="flex-1 flex gap-3">
                     <button disabled class="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex justify-center items-center text-lg font-bold border border-slate-200 dark:border-slate-700">
@@ -675,7 +675,7 @@ onUnmounted(() => {
     <transition name="fade">
       <div v-if="showPasswordModal" class="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4">
         <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl p-8 rounded-[2rem] border border-white dark:border-slate-700 shadow-2xl w-full max-w-md text-center">
-          <div class="w-16 h-16 bg-blue-50 dark:bg-slate-900 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5">🔒</div>
+          <div class="w-16 h-16 bg-blue-50 dark:bg-slate-900 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5">加密</div>
           <h3 class="text-xl font-black text-slate-800 dark:text-white mb-2">{{ t('安全导出设定') }}</h3>
           <p class="text-sm text-slate-500 mb-6">{{ t('为保护企业敏感数据，请设置查看密码') }}</p>
           <input v-model="pdfPassword" type="password" :placeholder="t('输入文档密码')" class="glass-input mb-6 bg-slate-50 dark:bg-slate-900 focus:bg-white !text-base !rounded-xl" autofocus />
