@@ -55,10 +55,10 @@ function animateBackground() {
   animationFrameId = requestAnimationFrame(animateBackground);
 }
 
-// ── 工作区逻辑 ──────────────────────────
+// ── 工作区及双轨历史逻辑 ──────────────────────────
 const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0);
 const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0);
-const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false);
+const isDragOver = ref(false), fileInputRef = ref(null), showHistoryModal = ref(false);
 const showPasswordModal = ref(false), pdfPassword = ref(''), isExporting = ref(false);
 let currentRequestId = 0;
 const startTime = ref(0);
@@ -67,13 +67,13 @@ const startTime = ref(0);
 const historyText = ref([]);
 const historyFile = ref([]);
 
-// 综合历史记录（选择页使用）
-const combinedHistoryList = computed(() => {
+// 综合历史记录（选择页使用，按时间倒序排列）
+const combinedHistory = computed(() => {
   return [...historyText.value, ...historyFile.value].sort((a, b) => b.id - a.id);
 });
 
-// 单一模式历史记录（工作页使用）
-const historyList = computed(() => {
+// 当前激活的单一历史记录列表（本页使用）
+const currentHistoryList = computed(() => {
   return inputMode.value === 'text' ? historyText.value : historyFile.value;
 });
 
@@ -82,21 +82,18 @@ const exportDate = computed(() => {
   return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
 });
 
-// 核心修复：强制注入响应式依赖，并在前端拦截重写模块配置
+// 工具依赖注入
 const tools = computed(() => {
   const lang = currentLang.value; // 强制 Vue 收集依赖
   return Object.values(TOOLS_CONFIG).map(tool => {
-    
-    // 初始化自定义配置
     let customInputType = tool.inputType;
     let customExample = tool.example;
 
-    // 针对后三个模块进行配置拦截重写
     if (tool.id === 'hr_resume') {
-      customInputType = 'text'; // 强制改为 text，开启双模式
+      customInputType = 'text'; // 强制改为 text，开启段落+文件双模式
       customExample = `基本信息：张某某，男，8年工作经验\n求职意向：高级产品经理/产品总监\n\n【核心经历】\n2021.05 - 至今 | 某出海互联网公司 | 产品总监\n- 负责公司核心社交产品从0到1的搭建，带领15人产研团队。\n- 期间日活突破100万，但由于公司资金链问题，近期准备看机会。\n\n2018.03 - 2021.04 | 某一线大厂 | 高级产品经理\n- 负责电商核心交易链路重构，提升转化率约 15%。\n- 参与多次大促活动，具有极强的抗压能力。\n\n【自我评价】\n逻辑清晰，对数据高度敏感。能快速适应高压环境，执行力强，但有时对团队细节管理偏于严苛。`;
     } else if (tool.id === 'finance_audit') {
-      customInputType = 'text'; // 强制改为 text，开启双模式
+      customInputType = 'text'; // 强制改为 text，开启段落+文件双模式
       customExample = `报销单号：EX-2026-0515\n申请人：李四 (大客户销售部)\n申请日期：2026-05-02\n\n【报销明细】\n1. 4月30日 差旅机票：¥1,500 (符合标准出差审批)\n2. 5月01日 客户招待费：¥5,000 (备注：均为五一假期当天开具的连号餐饮发票，且金额为整数)\n3. 5月02日 办公用品采购：¥3,800 (备注：购买电子设备，但未见财务资产库入库单，且为节假日发生)\n4. 5月03日 市内交通费：¥800 (备注：全为出租车定额发票)`;
     } else if (tool.id === 'ocr_corrector') {
       customInputType = 'file'; // 最后一个模块保持纯文件模式
@@ -131,8 +128,14 @@ function showToast(msg, type = 'success') {
   toastTimer = setTimeout(() => { toast.value.show = false; }, 3000);
 }
 
-// ── 页面路由与跳转逻辑 ──────────────────────────
+function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  return `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+}
 
+// ── 核心路由体系 ──────────────────────────
+
+// 1. 进入工具 (主入口)
 function openTool(toolId) {
   selectedTool.value = toolId;
   resetWorkspace();
@@ -149,6 +152,7 @@ function openTool(toolId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// 2. 从选择页 -> 具体功能页
 function openMode(mode) {
   resetWorkspace();
   inputMode.value = mode;
@@ -156,6 +160,7 @@ function openMode(mode) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// 3. 返回上一级
 function goBack() {
   if (currentView.value === 'tool_select' || selectedTool.value === 'ocr_corrector') {
     currentView.value = 'dashboard';
@@ -171,18 +176,21 @@ function goBack() {
 function goBackToDashboard() {
   currentView.value = 'dashboard';
   selectedTool.value = null;
-  isOutputExpanded.value = false;
-  showHistory.value = false;
   resetWorkspace();
 }
 
 function resetWorkspace() {
   output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0;
-  showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0;
+  showHistoryModal.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0;
   currentRequestId++;
 }
 
-// ── 数据历史隔离与保存 ──────────────────────────
+// ── 数据加载与保存 ──────────────────────────
+
+function loadHistory(t_id) {
+  try { historyText.value = JSON.parse(localStorage.getItem(`ag_${t_id}_text`)||'[]'); } catch{ historyText.value = []; }
+  try { historyFile.value = JSON.parse(localStorage.getItem(`ag_${t_id}_file`)||'[]'); } catch{ historyFile.value = []; }
+}
 
 function saveToHistory(t_id, mode, i, r) {
   const k = `ag_${t_id}_${mode}`;
@@ -190,14 +198,10 @@ function saveToHistory(t_id, mode, i, r) {
     const h = JSON.parse(localStorage.getItem(k)||'[]'); 
     h.unshift({id: Date.now(), input: i, output: r, mode: mode}); 
     localStorage.setItem(k, JSON.stringify(h.slice(0,20)));
+    // 更新内存状态
     if(mode === 'text') historyText.value = h.slice(0,20);
     else historyFile.value = h.slice(0,20);
   } catch(e){} 
-}
-
-function loadHistory(t_id) {
-  try { historyText.value = JSON.parse(localStorage.getItem(`ag_${t_id}_text`)||'[]'); } catch{ historyText.value = []; }
-  try { historyFile.value = JSON.parse(localStorage.getItem(`ag_${t_id}_file`)||'[]'); } catch{ historyFile.value = []; }
 }
 
 function loadHistoryItem(item) {
@@ -205,7 +209,7 @@ function loadHistoryItem(item) {
   currentView.value = item.mode === 'text' ? 'tool_text' : 'tool_file';
   userInput.value = item.mode === 'text' ? item.input : '';
   output.value = item.output;
-  showHistory.value = false;
+  showHistoryModal.value = false;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -213,7 +217,7 @@ function clearCurrentHistory() {
   localStorage.removeItem(`ag_${selectedTool.value}_${inputMode.value}`); 
   if (inputMode.value === 'text') historyText.value = [];
   else historyFile.value = [];
-  showHistory.value = false; 
+  showHistoryModal.value = false; 
   showToast(t('历史记录已清空'));
 }
 
@@ -224,15 +228,12 @@ function clearCombinedHistory() {
   showToast(t('历史记录已清空'));
 }
 
-function formatDate(timestamp) {
-  const date = new Date(timestamp);
-  return `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-}
+// ── 业务处理 ──────────────────────────
 
 function renderFinanceJSON(json) {
   const score = json.risk_score ?? 0;
   const scoreColor = score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : '#EF4444';
-  let html = `<div class="bg-white/50 dark:bg-slate-800/50 rounded-3xl p-6 border border-white/60 dark:border-slate-700">`;
+  let html = `<div class="bg-white/50 dark:bg-slate-800/50 rounded-3xl p-6 border border-white/60 dark:border-slate-700 shadow-sm">`;
   html += `<div class="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">`;
   html += `<h3 class="text-xl font-bold text-slate-800 dark:text-white m-0">📄 ${json.document_type || t('财务单据')}</h3>`;
   html += `<span class="px-4 py-1.5 rounded-full text-sm font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">${json.audit_status}</span>`;
@@ -306,7 +307,7 @@ function cancelAnalysis() {
 async function processInput() {
   if (loading.value) return;
   if (inputMode.value === 'file') {
-    if (!selectedFile.value || parseStatus.value !== 'done') return showToast(t('⚠️ 请先上传'), 'warn');
+    if (!selectedFile.value || parseStatus.value !== 'done') return showToast(t('⚠️ 请先上传文件'), 'warn');
     return await processFileInput();
   } else {
     const text = userInput.value.trim();
@@ -347,7 +348,7 @@ async function processFileInput() {
     }
     if (reqId !== currentRequestId) return;
     output.value = result; elapsedMs.value = Date.now() - startTime.value;
-    saveToHistory(selectedTool.value, 'file', `[文件] ${selectedFile.value.name}`, result);
+    saveToHistory(selectedTool.value, 'file', `[文档] ${selectedFile.value.name}`, result);
   } catch (err) { 
     if (reqId !== currentRequestId) return;
     error.value = err.message;
@@ -394,10 +395,10 @@ onUnmounted(() => {
     </div>
 
     <transition name="fade">
-      <div v-if="toast.show" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white dark:border-slate-700 shadow-xl text-sm font-medium text-slate-800 dark:text-white flex items-center gap-2">
-        <span v-if="toast.type==='success'" class="text-green-500">✓</span>
-        <span v-else-if="toast.type==='warn'" class="text-yellow-500">!</span>
-        <span v-else class="text-red-500">✕</span>
+      <div v-if="toast.show" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full bg-slate-900/90 backdrop-blur-xl border border-slate-700 shadow-xl text-sm font-bold text-white flex items-center gap-3">
+        <span v-if="toast.type==='success'" class="w-2 h-2 rounded-full bg-green-400"></span>
+        <span v-else-if="toast.type==='warn'" class="w-2 h-2 rounded-full bg-yellow-400"></span>
+        <span v-else class="w-2 h-2 rounded-full bg-red-400"></span>
         {{ toast.message }}
       </div>
     </transition>
@@ -523,15 +524,15 @@ onUnmounted(() => {
                 <h4 class="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
                   ✨ {{ t('综合处理历史') }}
                 </h4>
-                <button v-if="combinedHistoryList.length > 0" @click="clearCombinedHistory" class="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/30 px-4 py-1.5 rounded-full transition">{{ t('清空记录') }}</button>
+                <button v-if="combinedHistory.length > 0" @click="clearCombinedHistory" class="text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/30 px-4 py-1.5 rounded-full transition">{{ t('清空记录') }}</button>
               </div>
 
-              <div v-if="combinedHistoryList.length === 0" class="py-12 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 text-sm font-medium bg-slate-50/50 dark:bg-slate-800/30">
+              <div v-if="combinedHistory.length === 0" class="py-12 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 text-sm font-medium bg-slate-50/50 dark:bg-slate-800/30">
                 {{ t('暂无历史记录') }}
               </div>
               
               <div v-else class="space-y-4 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
-                <div v-for="h in combinedHistoryList" :key="h.id" @click="loadHistoryItem(h)" class="flex items-center justify-between p-5 bg-white/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition group">
+                <div v-for="h in combinedHistory" :key="h.id" @click="loadHistoryItem(h)" class="flex items-center justify-between p-5 bg-white/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition group">
                   <div class="flex flex-col flex-1 min-w-0 pr-6">
                     <div class="flex items-center gap-3 mb-2">
                       <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border" :class="h.mode === 'text' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800' : 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800'">
