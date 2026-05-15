@@ -403,7 +403,7 @@ onUnmounted(() => {
 
     <header class="fixed top-0 w-full z-50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border-b border-white/50 dark:border-slate-800">
       <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-3 cursor-pointer group" @click="goBackToDashboard">
+        <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = 'landing'">
           <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-110 transition">A</div>
           <span class="text-xl font-black tracking-tight dark:text-white">Aegis AI</span>
         </div>
