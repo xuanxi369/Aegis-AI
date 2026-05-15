@@ -348,7 +348,7 @@ onUnmounted(() => {
 
         <div v-else-if="currentView === 'dashboard'" class="py-10">
           <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2">{{ t('欢迎回来，探索Aegis') }}</h2>
-          <p class="text-base text-slate-500 dark:text-slate-400 mb-14">{{ t('选择一个专属配置的 Agent 开始您的工作') }}<br/>{{ t('法律声明：本站采用无服务器架构部署，您的数据仅在本地解构分析，不存在泄漏风险。') }}</p> 
+          <p class="text-base text-slate-500 dark:text-slate-400 mb-14">{{ t('选择一个专属配置的 Agent 开始您的工作') }}<br/>{{ t('法律声明：本站采用无服务器架构部署，您的数据仅在本地解构分析，不存在泄漏风险') }}</p> 
           
           <!-- 核心模块组 -->
           <div class="mb-14">
