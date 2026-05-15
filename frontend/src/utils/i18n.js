@@ -119,7 +119,7 @@ export const dictionary = {
     '财务核算·风险审计': 'Financial Accounting · Risk Audit',
     '上传财务单据，Aegis自动审计异常并生成风险报告': 'Upload financial documents, Aegis automatically audits anomalies and generates risk reports',
     '图片/音频内容识别': 'Image/Audio Content Recognition',
-    '上传图片/音频，实现高精度数据总结与归纳': 'Upload images/audio for high-precision data summarization and analysis'
+    '上传图片/音频，实现高精度数据总结与归纳': 'Upload images/audio for high-precision data summarization and analysis',
     '输入文档密码': 'Enter document password',
     '综合风险评分': 'Overall Risk Score',
     'Aegis 效能中枢 · 安全报告': 'Aegis Performance Hub · Security Report'
