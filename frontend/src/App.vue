@@ -568,7 +568,7 @@ onUnmounted(() => {
                 </div>
               </div>
               <button @click="showHistory = !showHistory" class="px-6 py-2.5 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-full font-bold text-sm shadow-sm border border-blue-100 dark:border-slate-700 transition hover:bg-blue-100">
-                {{ t('📁 本页记录') }} ({{ historyList.length }})
+                {{ t('本页记录') }} ({{ historyList.length }})
               </button>
             </div>
 
