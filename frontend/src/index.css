@@ -156,23 +156,8 @@ body {
 .loading-dots span:nth-child(3) { background: #ec4899; animation-delay: 0.4s; }
 @keyframes pulse { 0%, 100% { transform: scale(0.6); opacity: 0.4; } 50% { transform: scale(1); opacity: 1; } }
 
-/* ==========================================
-   💡 修正后的 PDF 导出影子区域（防止截图白屏）
-   ========================================== */
-.pdf-export-area { 
-  position: absolute; 
-  top: -9999px; 
-  left: 0; 
-  width: 794px; 
-  pointer-events: none; 
-}
-
-/* 强制让打印影子区域内的所有后代元素回归纯白底、纯黑字，杜绝暗黑模式截图污染 */
-.pdf-export-area,
-.pdf-export-area * { 
-  color: #000000 !important; 
-  background: #ffffff !important; 
-}
+.pdf-export-area { position: fixed; top: 0; left: -9999px; width: 794px; background: #ffffff; pointer-events: none; }
+.pdf-export-area * { color: #000000 !important; }
 
 /* ==========================================
    暗黑模式高级适配 (Luminous Dark) - 拒绝死黑！
