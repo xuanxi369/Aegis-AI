@@ -7,6 +7,7 @@ import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js
 import { dictionary } from './utils/i18n.js' 
 
 marked.setOptions({ breaks: true, gfm: true })
+  
 
 // ── 核心响应式语言逻辑 ────────────────────
 const currentLang = ref(localStorage.getItem('aegis_lang') || 'zh-CN')
