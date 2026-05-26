@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { marked } from 'marked'
 import html2pdf from 'html2pdf.js'
-// 💡 已彻底移除引入：encryptPDFWithPassword
+import { encryptPDFWithPassword } from './utils/pdfEncrypt.js'
 import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js'
 import { dictionary } from './utils/i18n.js' 
 
@@ -58,7 +58,7 @@ function animateBackground() {
 const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
 const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
 const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false)
-const isExporting = ref(false) // 💡 仅保留这一个状态控制按钮
+const showPasswordModal = ref(false), pdfPassword = ref(''), isExporting = ref(false)
 let currentRequestId = 0 
 const startTime = ref(0)
 
@@ -143,9 +143,11 @@ function openTool(toolId) {
   loadHistory(toolId)
   
   if (toolId === 'ocr_corrector') {
+    // 图片音频识别：跳过选择页，直达文件页
     inputMode.value = 'file'
     currentView.value = 'tool_file'
   } else {
+    // 其他功能：进入选择分发页
     currentView.value = 'tool_select'
   }
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -163,6 +165,7 @@ function goBack() {
     currentView.value = 'dashboard'
     selectedTool.value = null
   } else {
+    // 从具体功能页返回选择页
     currentView.value = 'tool_select'
     resetWorkspace()
     loadHistory(selectedTool.value) 
@@ -355,44 +358,15 @@ async function processFileInput() {
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
 function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制成功'))) }
 
-// 💡 彻底修复白屏问题的纯净导出函数
-async function exportToPDF() {
-  isExporting.value = true; 
-  const el = document.getElementById('report-content');
-  
-  // 核心：强制重写元素样式，把它从 -9999px 拉回正常的文档流，
-  // 使用 z-index: -9999 藏在底层保证你看不见，但浏览器能完美渲染。
-  const originalStyle = el.style.cssText;
-  el.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; z-index: -9999 !important; width: 794px !important; display: block !important; background-color: #ffffff !important;';
-
-  // 必须等待一段时间让浏览器进行 Repaint 重绘，否则 html2canvas 依然会抓到隐藏前的状态
-  await new Promise(resolve => setTimeout(resolve, 300));
-
+async function secureExportToPDF(password) {
+  if (!password) return; isExporting.value = true; const el = document.getElementById('report-content')
   try {
-    const opt = { 
-      margin: 10, 
-      filename: `Aegis报告_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        scrollY: 0,       // 强制截取顶部防止滚动条位移
-      }, 
-      jsPDF: { format: 'a4', orientation: 'portrait' } 
-    };
-    
-    // 直接走基础保存路线
-    await html2pdf().set(opt).from(el).save();
-    showToast(t('✅ PDF 导出成功'));
-  } catch(e) { 
-    console.error(e);
-    showToast(t('❌ PDF 导出失败'), 'error'); 
-  } finally { 
-    // 导出完成后立即恢复原样，隐藏在屏幕外
-    el.style.cssText = originalStyle;
-    isExporting.value = false; 
-  }
+    const opt = { margin: 0, html2canvas: { scale: 2, useCORS: true, onclone: (doc) => { const e = doc.getElementById('report-content'); e.style.position='static'; e.style.left='0'; e.style.zIndex='99999'; } }, jsPDF: { format: 'a4', orientation: 'portrait' } }
+    const pdfBlob = await html2pdf().set(opt).from(el).toPdf().output('blob')
+    const bytes = await encryptPDFWithPassword(await pdfBlob.arrayBuffer(), password)
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'})); a.download = `Aegis报告_${Date.now()}.pdf`; a.click()
+    showPasswordModal.value = false
+  } catch(e) { showToast('PDF 导出失败', 'error') } finally { isExporting.value = false }
 }
 
 onMounted(() => {
@@ -467,7 +441,7 @@ onUnmounted(() => {
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
           <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('✨面向传统企业文职人员的智能办公平台') }}</h3>
-          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('开启全自动化极简排版导出') }}</h3>
+          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('注意：PDF导出功能目前已暂停服务，还请谅解') }}</h3>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
             {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
@@ -659,10 +633,7 @@ onUnmounted(() => {
                   <div v-if="output && !loading" class="flex gap-2">
                     <button @click="isOutputExpanded = true" class="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-full text-sm font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-slate-700">{{ t('⤢ 展开') }}</button>
                     <button @click="copyOutput" class="px-4 py-2 bg-white dark:bg-slate-800 rounded-full text-sm font-bold border border-slate-100 dark:border-slate-700 shadow-sm dark:text-white">{{ t('复制') }}</button>
-                    
-                    <button @click="exportToPDF" :disabled="isExporting" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-bold text-white shadow-md disabled:opacity-50">
-                      {{ isExporting ? t('正在导出...') : t('导出 PDF') }}
-                    </button>
+                    <button @click="showPasswordModal = true" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-bold text-white shadow-md">{{ t('导出 PDF') }}</button>
                   </div>
                 </div>
 
@@ -687,7 +658,7 @@ onUnmounted(() => {
 
     <transition name="fade">
       <div v-if="isOutputExpanded" class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-6 md:p-12">
-        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-5xl h-full h-full rounded-[2.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
+        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-5xl h-full rounded-[2.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
           <div class="px-8 py-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
             <div class="flex items-center gap-3">
               <span class="text-2xl">✨</span><h3 class="text-xl font-black text-slate-800 dark:text-white">{{ t('沉浸式阅读') }}</h3>
@@ -696,6 +667,23 @@ onUnmounted(() => {
           </div>
           <div class="p-10 overflow-y-auto custom-scrollbar flex-1">
             <div class="markdown-output max-w-4xl mx-auto text-base" v-html="renderedOutput"></div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <transition name="fade">
+      <div v-if="showPasswordModal" class="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4">
+        <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl p-8 rounded-[2rem] border border-white dark:border-slate-700 shadow-2xl w-full max-w-md text-center">
+          <div class="w-16 h-16 bg-blue-50 dark:bg-slate-900 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5">加密</div>
+          <h3 class="text-xl font-black text-slate-800 dark:text-white mb-2">{{ t('安全导出设定') }}</h3>
+          <p class="text-sm text-slate-500 mb-6">{{ t('为保护企业敏感数据，请设置查看密码') }}</p>
+          <input v-model="pdfPassword" type="password" :placeholder="t('输入文档密码')" class="glass-input mb-6 bg-slate-50 dark:bg-slate-900 focus:bg-white !text-base !rounded-xl" autofocus />
+          <div class="flex gap-3">
+            <button @click="showPasswordModal = false" class="flex-1 py-3 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-base">{{ t('取消') }}</button>
+            <button @click="secureExportToPDF(pdfPassword)" :disabled="isExporting" class="flex-1 py-3 rounded-full bg-blue-600 text-white font-bold text-base shadow-lg shadow-blue-500/30">
+              {{ isExporting ? t('Aegis深度运算中') : t('确认下载') }}
+            </button>
           </div>
         </div>
       </div>
