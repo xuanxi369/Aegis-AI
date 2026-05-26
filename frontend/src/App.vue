@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { marked } from 'marked'
 import html2pdf from 'html2pdf.js'
+// 💡 已彻底移除引入：encryptPDFWithPassword
 import { callAI, callAudioAI, autoParseFile, TOOLS_CONFIG } from './utils/api.js'
 import { dictionary } from './utils/i18n.js' 
 
@@ -57,7 +58,7 @@ function animateBackground() {
 const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
 const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
 const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false)
-const isExporting = ref(false)
+const isExporting = ref(false) // 💡 仅保留这一个状态控制按钮
 let currentRequestId = 0 
 const startTime = ref(0)
 
@@ -142,11 +143,9 @@ function openTool(toolId) {
   loadHistory(toolId)
   
   if (toolId === 'ocr_corrector') {
-    // 图片音频识别：跳过选择页，直达文件页
     inputMode.value = 'file'
     currentView.value = 'tool_file'
   } else {
-    // 其他功能：进入选择分发页
     currentView.value = 'tool_select'
   }
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -164,7 +163,6 @@ function goBack() {
     currentView.value = 'dashboard'
     selectedTool.value = null
   } else {
-    // 从具体功能页返回选择页
     currentView.value = 'tool_select'
     resetWorkspace()
     loadHistory(selectedTool.value) 
@@ -357,22 +355,42 @@ async function processFileInput() {
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
 function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制成功'))) }
 
-// 直接导出非加密的纯净版 PDF
+// 💡 纯净无加密直接导出 PDF 函数（终极破除白屏版）
 async function exportToPDF() {
-  isExporting.value = true; 
+  isExporting.value = true;
   const el = document.getElementById('report-content');
+  
+  // 【拯救白屏的关键逻辑】
+  // 原本的 CSS 让盒子脱离文档流导致截图插件跑丢了。
+  // 我们在执行导出的瞬间，用 JS 强行把它拽回到屏幕坐标(0,0)，躲在底层(-9999)，强制浏览器重新计算实际高度。
+  const oldCss = el.style.cssText;
+  el.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; z-index: -9999 !important; width: 794px !important; display: block !important; background-color: #ffffff !important;';
+
+  // 给浏览器 100 毫秒的喘息时间，让它把因为刚改了 position 而没来得及刷新的字体排版重新撑开
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   try {
-    // 完美保留你原版的 onclone 截取修复逻辑
     const opt = { 
-      margin: 10, 
+      margin: [10, 10, 10, 10], 
       filename: `Aegis报告_${Date.now()}.pdf`,
-      html2canvas: { scale: 2, useCORS: true, onclone: (doc) => { const e = doc.getElementById('report-content'); e.style.position='static'; e.style.left='0'; e.style.zIndex='99999'; } }, 
-      jsPDF: { format: 'a4', orientation: 'portrait' } 
+      image: { type: 'jpeg', quality: 1.0 }, // 画质拉满
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        scrollY: 0,       // 无视浏览器的滚动条偏离
+        windowWidth: 794  // 强制锁定 A4 渲染宽
+      }, 
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
     };
+
     await html2pdf().set(opt).from(el).save();
-  } catch(e) { 
-    showToast(t('PDF 导出失败'), 'error'); 
+    showToast(t('✅ PDF 导出成功'));
+  } catch (e) { 
+    console.error(e);
+    showToast(t('❌ PDF 导出失败'), 'error'); 
   } finally { 
+    // 拍完照瞬间隐藏，做到神不知鬼不觉
+    el.style.cssText = oldCss; 
     isExporting.value = false; 
   }
 }
@@ -449,7 +467,7 @@ onUnmounted(() => {
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
           <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('✨面向传统企业文职人员的智能办公平台') }}</h3>
-          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('注意：PDF导出功能目前已暂停服务，还请谅解') }}</h3>
+          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('极简智能 · 高效无阻') }}</h3>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
             {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
@@ -641,7 +659,10 @@ onUnmounted(() => {
                   <div v-if="output && !loading" class="flex gap-2">
                     <button @click="isOutputExpanded = true" class="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-full text-sm font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-slate-700">{{ t('⤢ 展开') }}</button>
                     <button @click="copyOutput" class="px-4 py-2 bg-white dark:bg-slate-800 rounded-full text-sm font-bold border border-slate-100 dark:border-slate-700 shadow-sm dark:text-white">{{ t('复制') }}</button>
-                    <button @click="exportToPDF" :disabled="isExporting" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-bold text-white shadow-md">{{ isExporting ? t('正在导出...') : t('导出 PDF') }}</button>
+                    
+                    <button @click="exportToPDF" :disabled="isExporting" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-bold text-white shadow-md disabled:opacity-50">
+                      {{ isExporting ? t('正在导出...') : t('导出 PDF') }}
+                    </button>
                   </div>
                 </div>
 
