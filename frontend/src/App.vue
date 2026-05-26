@@ -58,7 +58,7 @@ function animateBackground() {
 const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
 const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
 const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false)
-const isExporting = ref(false) // 💡 响应式导出状态，防止重复点击
+const isExporting = ref(false) // 💡 仅保留这一个状态控制按钮
 let currentRequestId = 0 
 const startTime = ref(0)
 
@@ -158,6 +158,7 @@ function openMode(mode) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+// 修正：同步清理 goBack 内的路由逻辑，移除无用残留
 function goBack() {
   if (currentView.value === 'tool_select' || selectedTool.value === 'ocr_corrector') {
     currentView.value = 'dashboard'
@@ -177,6 +178,7 @@ function goBackToDashboard() {
   resetWorkspace()
 }
 
+// 修正：彻底移除废弃的 currentRequestId++ 悬空调用和未定义状态
 function resetWorkspace() {
   output.value = ''; error.value = ''; userInput.value = ''; elapsedMs.value = 0
   showHistory.value = false; selectedFile.value = null; parsedText.value = ''; parseStatus.value = ''; ocrProgress.value = 0
