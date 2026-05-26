@@ -58,7 +58,7 @@ function animateBackground() {
 const loading = ref(false), output = ref(''), error = ref(''), userInput = ref(''), elapsedMs = ref(0)
 const selectedFile = ref(null), parsedText = ref(''), parseStatus = ref(''), ocrProgress = ref(0)
 const isDragOver = ref(false), fileInputRef = ref(null), showHistory = ref(false)
-const isExporting = ref(false) // 💡 已彻底删除旧密码弹窗相关的变量
+const isExporting = ref(false) // 💡 响应式导出状态，防止重复点击
 let currentRequestId = 0 
 const startTime = ref(0)
 
@@ -376,7 +376,6 @@ async function exportToPDF() {
   }
 
   try {
-    // 链式调用直接保存，免去二进制魔改导致的结构损坏和空白红线
     await html2pdf().set(opt).from(el).save()
     showToast(t('✅ PDF 导出成功'))
   } catch (e) { 
@@ -651,6 +650,7 @@ onUnmounted(() => {
                   <div v-if="output && !loading" class="flex gap-2">
                     <button @click="isOutputExpanded = true" class="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-full text-sm font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-slate-700">{{ t('⤢ 展开') }}</button>
                     <button @click="copyOutput" class="px-4 py-2 bg-white dark:bg-slate-800 rounded-full text-sm font-bold border border-slate-100 dark:border-slate-700 shadow-sm dark:text-white">{{ t('复制') }}</button>
+                    
                     <button @click="exportToPDF" :disabled="isExporting" class="px-4 py-2 bg-blue-600 rounded-full text-sm font-bold text-white shadow-md disabled:opacity-50">
                       {{ isExporting ? t('正在导出...') : t('导出 PDF') }}
                     </button>
