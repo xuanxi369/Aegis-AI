@@ -141,11 +141,11 @@ body {
 /* ==========================================
    💡 PDF 导出关键修复：确保内容渲染到 DOM 中，而非移出屏幕
    ========================================== */
-.pdf-export-area { 
+/* .pdf-export-area { 
   position: absolute; 
   top: 0; 
   left: 0; 
-  z-index: -9999; /* 移到最底层，肉眼不可见，但浏览器会渲染 */
+  z-index: -9999;  
   width: 794px; 
   background: #ffffff; 
 }
@@ -153,7 +153,23 @@ body {
 .pdf-export-area * { 
   color: #000000 !important; 
   background: #ffffff !important; 
+} */
+.pdf-export-area { 
+  position: fixed; 
+  top: 0; 
+  left: -9999px; /* 平时扔到屏幕外隐藏，避免破坏你原本漂亮的 UI 布局 */
+  width: 794px; 
+  pointer-events: none;
 }
+
+/* 保证导出的 PDF 永远是纯净的白底黑字，强制免疫暗黑模式 */
+.pdf-export-area,
+.pdf-export-area * { 
+  color: #000000 !important; 
+  background: #ffffff !important; 
+}
+
+
 
 /* ==========================================
    暗黑模式适配
