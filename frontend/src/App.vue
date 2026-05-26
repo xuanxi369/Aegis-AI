@@ -359,33 +359,40 @@ function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>sho
 async function exportToPDF() {
   isExporting.value = true; 
   const el = document.getElementById('report-content');
+  
+  // 核心拯救白屏Bug的逻辑：
+  // 截图前强行使用 JS 把处于屏幕外 -9999px 的 live 元素暂时拽回到视口原点（隐藏在负层级 z-index），
+  // 并且强制设置样式，使浏览器渲染引擎能够计算其实际文档树布局与高度。
+  const originalStyle = el.style.cssText;
+  el.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; z-index: -9999 !important; width: 794px !important; display: block !important; background-color: #ffffff !important; visibility: visible !important;';
+
+  // 关键：给浏览器 layout 引擎 300ms 喘息时间进行重绘（Paint），确保 markdown 转换出来的子节点内容已经被完整渲染拉伸！
+  await new Promise(resolve => setTimeout(resolve, 300));
+
   try {
-    // 💯 百分百还原你最初起作用的截屏规则！把不可见元素强行拉回克隆文档流中。
     const opt = { 
-      margin: 10, // 稍微留10px边距防止贴边
+      margin: 10, 
       filename: `Aegis报告_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        onclone: (doc) => { 
-          const e = doc.getElementById('report-content'); 
-          // 这一步是你代码里自带的灵魂操作，保证了截图插件能抓到真实内容！
-          e.style.position = 'static'; 
-          e.style.left = '0'; 
-          e.style.zIndex = '99999'; 
-        } 
+        logging: false,
+        scrollY: 0,       // 防止受页面主轴滚动条偏移影响
+        windowWidth: 794  // 锁定视口宽度
       }, 
       jsPDF: { format: 'a4', orientation: 'portrait' } 
     };
     
-    // 直接走基础的 save() 路线，抛弃加密逻辑的二进制破坏
+    // 直接走无损的基础 save() 路线，抛弃对二进制结构的破坏
     await html2pdf().set(opt).from(el).save();
     showToast(t('✅ PDF 导出成功'));
   } catch(e) { 
     console.error(e);
     showToast(t('❌ PDF 导出失败'), 'error'); 
   } finally { 
+    // 快照捕获后，瞬间将其塞回原有的离屏隐藏位置，做到神不知鬼不觉
+    el.style.cssText = originalStyle;
     isExporting.value = false; 
   }
 }
@@ -457,7 +464,7 @@ onUnmounted(() => {
             {{ t('IIEAO · 企业效能引擎') }}
           </div>
           
-          <h1 class="text-5xl md:text-[5.5rem] font-black text-slate-800 dark:text-white tracking-tight leading-tight mb-8">
+          <h1 class="text-5xl md:text-[5.5rem] font-black text-slate-800 dark:text-white tracking-tight tracking-tight leading-tight mb-8">
             {{ t('数智赋能职场') }} <br/> 
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
@@ -682,7 +689,7 @@ onUnmounted(() => {
 
     <transition name="fade">
       <div v-if="isOutputExpanded" class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-6 md:p-12">
-        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-5xl h-full h-full rounded-[2.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
+        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-5xl h-full rounded-[2.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
           <div class="px-8 py-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
             <div class="flex items-center gap-3">
               <span class="text-2xl">✨</span><h3 class="text-xl font-black text-slate-800 dark:text-white">{{ t('沉浸式阅读') }}</h3>
