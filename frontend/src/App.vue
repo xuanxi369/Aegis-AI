@@ -355,42 +355,37 @@ async function processFileInput() {
 function fillExample() { if(currentTool.value?.example) userInput.value = currentTool.value.example }
 function copyOutput() { navigator.clipboard.writeText(output.value).then(()=>showToast(t('复制成功'))) }
 
-// 💡 纯净无加密直接导出 PDF 函数（终极破除白屏版）
+// 💡 彻底修复白屏问题的纯净导出函数
 async function exportToPDF() {
-  isExporting.value = true;
+  isExporting.value = true; 
   const el = document.getElementById('report-content');
-  
-  // 【拯救白屏的关键逻辑】
-  // 原本的 CSS 让盒子脱离文档流导致截图插件跑丢了。
-  // 我们在执行导出的瞬间，用 JS 强行把它拽回到屏幕坐标(0,0)，躲在底层(-9999)，强制浏览器重新计算实际高度。
-  const oldCss = el.style.cssText;
-  el.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; z-index: -9999 !important; width: 794px !important; display: block !important; background-color: #ffffff !important;';
-
-  // 给浏览器 100 毫秒的喘息时间，让它把因为刚改了 position 而没来得及刷新的字体排版重新撑开
-  await new Promise(resolve => setTimeout(resolve, 100));
-
   try {
+    // 💯 百分百还原你最初起作用的截屏规则！把不可见元素强行拉回克隆文档流中。
     const opt = { 
-      margin: [10, 10, 10, 10], 
+      margin: 10, // 稍微留10px边距防止贴边
       filename: `Aegis报告_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 1.0 }, // 画质拉满
+      image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
-        useCORS: true,
-        scrollY: 0,       // 无视浏览器的滚动条偏离
-        windowWidth: 794  // 强制锁定 A4 渲染宽
+        useCORS: true, 
+        onclone: (doc) => { 
+          const e = doc.getElementById('report-content'); 
+          // 这一步是你代码里自带的灵魂操作，保证了截图插件能抓到真实内容！
+          e.style.position = 'static'; 
+          e.style.left = '0'; 
+          e.style.zIndex = '99999'; 
+        } 
       }, 
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+      jsPDF: { format: 'a4', orientation: 'portrait' } 
     };
-
+    
+    // 直接走基础的 save() 路线，抛弃加密逻辑的二进制破坏
     await html2pdf().set(opt).from(el).save();
     showToast(t('✅ PDF 导出成功'));
-  } catch (e) { 
+  } catch(e) { 
     console.error(e);
     showToast(t('❌ PDF 导出失败'), 'error'); 
   } finally { 
-    // 拍完照瞬间隐藏，做到神不知鬼不觉
-    el.style.cssText = oldCss; 
     isExporting.value = false; 
   }
 }
@@ -467,7 +462,7 @@ onUnmounted(() => {
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">{{ t('释放极简效能') }}</span>
           </h1>
           <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('✨面向传统企业文职人员的智能办公平台') }}</h3>
-          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('极简智能 · 高效无阻') }}</h3>
+          <h3 class="text-lg text-slate-600 dark:text-slate-300 font-medium">{{ t('开启全自动化极简排版导出') }}</h3>
           
           <button @click="currentView = 'dashboard'" class="btn-fluid text-lg px-10 py-4 shadow-xl shadow-blue-500/30 flex items-center gap-3 group mt-4">
             {{ t('进入功能中枢') }} <span class="group-hover:translate-x-2 transition-transform">→</span>
@@ -687,7 +682,7 @@ onUnmounted(() => {
 
     <transition name="fade">
       <div v-if="isOutputExpanded" class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-6 md:p-12">
-        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-5xl h-full rounded-[2.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
+        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl w-full max-w-5xl h-full h-full rounded-[2.5rem] flex flex-col relative overflow-hidden border border-white dark:border-slate-700 shadow-2xl">
           <div class="px-8 py-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
             <div class="flex items-center gap-3">
               <span class="text-2xl">✨</span><h3 class="text-xl font-black text-slate-800 dark:text-white">{{ t('沉浸式阅读') }}</h3>
